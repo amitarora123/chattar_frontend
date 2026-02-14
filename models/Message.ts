@@ -1,4 +1,4 @@
-import mongoose, { Schema, Types } from "mongoose";
+import mongoose, { Schema, Types } from 'mongoose';
 
 export interface IMessage extends Document {
   chat_id: Types.ObjectId;
@@ -34,12 +34,12 @@ export interface IMessageReactions extends Document {
 const messageSchema = new Schema<IMessage>(
   {
     chat_id: {
-      type: Types.ObjectId,
-      ref: "Chat",
+      type: Schema.Types.ObjectId,
+      ref: 'Chat',
     },
     sender_id: {
-      type: Types.ObjectId,
-      ref: "User",
+      type: Schema.Types.ObjectId,
+      ref: 'User',
     },
     content: {
       type: String,
@@ -47,19 +47,19 @@ const messageSchema = new Schema<IMessage>(
     },
     message_type: String,
     reply_to_id: {
-      type: Types.ObjectId,
-      ref: "Message",
+      type: Schema.Types.ObjectId,
+      ref: 'Message',
     },
     is_edited: Boolean,
     is_deleted: Boolean,
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const messageAttachmentSchema = new Schema<IMessageAttachments>({
   message_id: {
-    type: Types.ObjectId,
-    ref: "Message",
+    type: Schema.Types.ObjectId,
+    ref: 'Message',
   },
   file_size: Number,
   file_url: String,
@@ -69,40 +69,40 @@ const messageAttachmentSchema = new Schema<IMessageAttachments>({
 
 const messageReadsSchema = new Schema<IMessageReads>({
   message_id: {
-    type: Types.ObjectId,
-    ref: "Message",
+    type: Schema.Types.ObjectId,
+    ref: 'Message',
   },
   user_id: {
-    type: Types.ObjectId,
-    ref: "User",
+    type: Schema.Types.ObjectId,
+    ref: 'User',
   },
   read_at: Date,
 });
 
 const messageReactionSchema = new Schema<IMessageReactions>({
   message_id: {
-    type: Types.ObjectId,
-    ref: "Message",
+    type: Schema.Types.ObjectId,
+    ref: 'Message',
   },
   user_id: {
-    type: Types.ObjectId,
-    ref: "User",
+    type: Schema.Types.ObjectId,
+    ref: 'User',
   },
   reaction: String,
   reacted_at: Date,
 });
 
 export const Message =
-  mongoose.models.Message || mongoose.model("Message", messageSchema);
+  mongoose.models.Message || mongoose.model('Message', messageSchema);
 
 export const MessageAttachment =
   mongoose.models.MessageAttachment ||
-  mongoose.model("MessageAttachment", messageAttachmentSchema);
+  mongoose.model('MessageAttachment', messageAttachmentSchema);
 
 export const MessageReadsSchema =
   mongoose.models.MessageReadsSchema ||
-  mongoose.model("MessageReadsSchema", messageReadsSchema);
+  mongoose.model('MessageReadsSchema', messageReadsSchema);
 
 export const MessageReaction =
   mongoose.models.MessageReaction ||
-  mongoose.model("MessageReaction", messageReactionSchema);
+  mongoose.model('MessageReaction', messageReactionSchema);

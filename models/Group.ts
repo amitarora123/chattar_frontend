@@ -18,11 +18,11 @@ interface IGroupRoles extends Document {
 
 const groupSchema = new Schema<IGroup>({
   chat_id: {
-    type: Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "Chat",
   },
   created_by: {
-    type: Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "User",
   },
   name: {
@@ -40,11 +40,11 @@ const groupRoleSchema = new Schema<IGroupRoles>({
     ref: "Group",
   },
   user_id: {
-    type: Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "User",
   },
   assigned_by: {
-    type: Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "User",
   },
   role: {
