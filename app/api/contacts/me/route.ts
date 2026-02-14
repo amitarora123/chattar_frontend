@@ -1,5 +1,5 @@
 import { authMiddleware } from '@/lib/authMiddleware';
-import { ChatContacts } from '@/models/Contact';
+import { Contacts } from '@/models/Contact';
 import { connectDB } from '@/utils/db';
 import { NextRequest } from 'next/server';
 
@@ -18,7 +18,7 @@ export const GET = async (request: NextRequest) => {
 
     await connectDB();
 
-    const userContacts = await ChatContacts.find({
+    const userContacts = await Contacts.find({
       user_id: authUser._id,
     }).lean();
 

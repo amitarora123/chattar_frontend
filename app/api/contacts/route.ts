@@ -1,5 +1,5 @@
 import { authMiddleware } from '@/lib/authMiddleware';
-import { ChatContacts } from '@/models/Contact';
+import { Contacts } from '@/models/Contact';
 import User from '@/models/User';
 import { connectDB } from '@/utils/db';
 import { NextRequest } from 'next/server';
@@ -21,11 +21,11 @@ export const POST = async (request: NextRequest) => {
 
     await connectDB();
 
-    const contactUser = await User.findOne({
+    const user = await User.findOne({
       email,
     });
 
-    if (!contactUser) {
+    if (!user) {
       return Response.json(
         {
           message: 'Contact is not using chatty',
@@ -34,18 +34,13 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    const chatContact = await ChatContacts.create({
-      user_id: authUser._id,
-      contact_id: contactUser._id,
+    const contact = await Contacts.create({
+      owner_id: authUser._id,
+      user_id: user._id,
       name: name,
     });
 
-    return Response.json(
-      {
-        ...chatContact.toObject(),
-      },
-      { status: 201 },
-    );
+    return Response.json(contact.toObject(), { status: 201 });
   } catch (error) {
     console.log('Contact Creation Error:', error);
 
@@ -59,5 +54,3 @@ export const POST = async (request: NextRequest) => {
     );
   }
 };
-
-

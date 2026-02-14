@@ -1,20 +1,20 @@
 import mongoose, { Document } from 'mongoose';
 import { Schema, Types } from 'mongoose';
 
-interface IChatContacts extends Document {
+interface IContacts extends Document {
+  owner_id: Types.ObjectId;
   user_id: Types.ObjectId;
-  contact_id: Types.ObjectId;
   name?: string;
 }
 
-const chatContactSchema = new Schema<IChatContacts>(
+const contactSchema = new Schema<IContacts>(
   {
-    user_id: {
+    owner_id: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-    contact_id: {
+    user_id: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
@@ -29,7 +29,7 @@ const chatContactSchema = new Schema<IChatContacts>(
   },
 );
 
-chatContactSchema.index(
+contactSchema.index(
   {
     user_id: 1,
     contact_id: 1,
@@ -37,6 +37,6 @@ chatContactSchema.index(
   { unique: true },
 );
 
-export const ChatContacts =
-  mongoose.models.ChatContacts ||
-  mongoose.model('ChatContacts', chatContactSchema);
+export const Contacts =
+  mongoose.models.Contacts ||
+  mongoose.model('Contacts', contactSchema);
