@@ -4,12 +4,12 @@ import { NextRequest } from 'next/server';
 
 export const authMiddleware = async (
   request: NextRequest,
-): Promise<Partial<IUser> | void> => {
+): Promise<Partial<IUser> | null> => {
   try {
     const token = request.headers.get('authorization')?.split(' ')[1];
 
     if (!token) {
-      return;
+      return null;
     }
     const decoded = jwt.verify(
       token,
@@ -19,5 +19,6 @@ export const authMiddleware = async (
     return decoded;
   } catch (error) {
     console.log('Auth Middleware Error', error);
+    return null
   }
 };
