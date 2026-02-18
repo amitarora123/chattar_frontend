@@ -1,45 +1,97 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
+interface IGroupMetaData {
+  name: string;
+  description?: string;
+  avatar_url?: string;
+  created_by: Types.ObjectId;
+}
+
 export interface IChat extends Document {
   is_group: boolean;
-  chat_key: string | null;
-  name?: string;
+  chat_key?: string;
+  groupMetaData?: IGroupMetaData;
+}
+
+export interface IGroupRole {
+  assigned_by: Types.ObjectId;
+  name: 'Admin' | 'Member';
+  assigned_at: Date;
 }
 
 export interface IChatParticipants extends Document {
   chat_id: Types.ObjectId;
   user_id: Types.ObjectId;
-  left_at: Date;
   is_muted: boolean;
+  joined_at: Date;
+  left_at?: Date;
   cleared_at?: Date;
-  role: 'Admin' | 'Member';
+  groupRole?: IGroupRole;
 }
+
+const groupMetaDataSchema = new Schema<IGroupMetaData>(
+  {
+    created_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    name: {
+      type: String,
+      minlength: 3,
+      required: true,
+    },
+    description: {
+      type: String,
+      required: false,
+    },
+    avatar_url: {
+      type: String,
+      required: false,
+    },
+  },
+  { _id: false },
+);
 
 const chatSchema = new Schema<IChat>(
   {
-    name: String,
     is_group: {
       type: Boolean,
       default: false,
-      required: false,
+      required: true,
     },
     chat_key: {
       type: String,
       required: false,
-      default: null,
+      unique: true,
+      sparse: true,
+    },
+    groupMetaData: {
+      type: groupMetaDataSchema,
+      required: false,
     },
   },
   { timestamps: true },
 );
 
-chatSchema.index(
-  { chat_key: 1 },
+const groupRoleSchema = new Schema<IGroupRole>(
   {
-    unique: true,
-    partialFilterExpression: {
-      is_group: false,
+    assigned_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+      enum: ['Admin', 'Member'],
+    },
+    assigned_at: {
+      type: Date,
+      default: Date.now,
     },
   },
+  { _id: false },
 );
 
 const chatParticipantsSchema = new Schema<IChatParticipants>(
@@ -47,14 +99,20 @@ const chatParticipantsSchema = new Schema<IChatParticipants>(
     chat_id: {
       type: Schema.Types.ObjectId,
       ref: 'Chat',
+      required: true,
     },
     user_id: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+      required: true,
+    },
+    joined_at: {
+      type: Date,
+      required: true,
+      default: Date.now,
     },
     left_at: {
       type: Date,
-      default: null,
       required: false,
     },
     is_muted: {
@@ -65,16 +123,17 @@ const chatParticipantsSchema = new Schema<IChatParticipants>(
     cleared_at: {
       type: Date,
       required: false,
-      default: null,
     },
-    role: {
-      type: String,
-      enum: ['Admin', 'Member'],
-      default: 'Member',
-    },
+    groupRole: groupRoleSchema,
   },
   { timestamps: true },
 );
+
+chatParticipantsSchema.index({ chat_id: 1 });
+
+chatParticipantsSchema.index({ user_id: 1 });
+
+chatParticipantsSchema.index({ chat_id: 1, user_id: 1 }, { unique: true });
 
 export const Chat = mongoose.models.Chat || mongoose.model('Chat', chatSchema);
 export const ChatParticipants =

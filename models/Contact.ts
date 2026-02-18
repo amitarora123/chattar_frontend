@@ -1,10 +1,9 @@
-import mongoose, { Document } from 'mongoose';
-import { Schema, Types } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
-interface IContacts extends Document {
-  owner_id: Types.ObjectId;
-  user_id: Types.ObjectId;
-  name?: string;
+export interface IContacts extends Document {
+  owner_id: Types.ObjectId; // The user who owns the contact list
+  user_id: Types.ObjectId; // The saved user
+  name?: string; // Optional custom nickname
 }
 
 const contactSchema = new Schema<IContacts>(
@@ -22,6 +21,7 @@ const contactSchema = new Schema<IContacts>(
     name: {
       type: String,
       required: false,
+      trim: true,
     },
   },
   {
@@ -29,14 +29,12 @@ const contactSchema = new Schema<IContacts>(
   },
 );
 
-contactSchema.index(
-  {
-    user_id: 1,
-    contact_id: 1,
-  },
-  { unique: true },
-);
+// Prevent duplicate contacts (same owner cannot save same user twice)
+contactSchema.index({ owner_id: 1, user_id: 1 }, { unique: true });
+
+// Optimize fetching all contacts of a user
+contactSchema.index({ owner_id: 1 });
 
 export const Contacts =
   mongoose.models.Contacts ||
-  mongoose.model('Contacts', contactSchema);
+  mongoose.model<IContacts>('Contacts', contactSchema);
