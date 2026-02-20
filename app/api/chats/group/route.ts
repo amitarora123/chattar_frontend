@@ -15,7 +15,8 @@ export const POST = async (request: NextRequest) => {
         { status: 400 },
       );
     }
-    const { memberIds, adminIds, name } = await request.json();
+    const { memberIds, adminIds, name, description, avatar_url } =
+      await request.json();
 
     if (!name) {
       return Response.json(
@@ -29,7 +30,12 @@ export const POST = async (request: NextRequest) => {
 
     const group = await Chat.create({
       is_group: true,
-      name,
+      groupMetaData: {
+        name,
+        description,
+        avatar_url,
+        created_by: authUser._id,
+      },
     });
 
     const participantsToInsert = [];
@@ -38,7 +44,10 @@ export const POST = async (request: NextRequest) => {
     participantsToInsert.push({
       chat_id: group._id,
       user_id: authUser._id,
-      role: 'Admin',
+      role: {
+        assigned_by: authUser._id,
+        name: 'Admin',
+      },
     });
 
     // other admins
@@ -47,7 +56,10 @@ export const POST = async (request: NextRequest) => {
         participantsToInsert.push({
           chat_id: group._id,
           user_id: id,
-          role: 'Admin',
+          role: {
+            assigned_by: authUser._id,
+            name: 'Admin',
+          },
         });
       });
     }
@@ -58,7 +70,10 @@ export const POST = async (request: NextRequest) => {
         participantsToInsert.push({
           chat_id: group._id,
           user_id: id,
-          role: 'Member',
+          role: {
+            name: 'Member',
+            assigned_by: authUser._id,
+          },
         });
       });
     }

@@ -12,7 +12,7 @@ export const GET = async (
     if (!authUser) {
       return Response.json(
         {
-          message: 'Invalid Token',
+          message: 'Unauthorized Request',
         },
         { status: 401 },
       );

@@ -10,7 +10,7 @@ export const GET = async (request: NextRequest) => {
     if (!authUser) {
       return Response.json(
         {
-          message: 'Invalid Token',
+          message: 'Unauthorized Request',
         },
         { status: 401 },
       );
@@ -19,7 +19,7 @@ export const GET = async (request: NextRequest) => {
     await connectDB();
 
     const userContacts = await Contacts.find({
-      user_id: authUser._id,
+      owner_id: authUser._id,
     }).lean();
 
     return Response.json(

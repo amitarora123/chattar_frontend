@@ -1,10 +1,6 @@
 import { authMiddleware } from '@/lib/authMiddleware';
 import { Chat, ChatParticipants, IChat } from '@/models/Chat';
-import {
-  IMessageAttachments,
-  Message,
-  MessageAttachment,
-} from '@/models/Message';
+import { Message } from '@/models/Message';
 import { NextRequest } from 'next/server';
 import { connectDB } from '@/utils/db';
 import { getChatKey } from '@/lib/service/chat';
@@ -21,15 +17,8 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    const {
-      chat_id,
-      recipient_id,
-      content,
-      attachment,
-      reply_to,
-      is_group,
-      name,
-    } = await request.json();
+    const { chat_id, recipient_id, content, attachment, reply_to, is_group } =
+      await request.json();
 
     await connectDB();
 
@@ -84,7 +73,6 @@ export const POST = async (request: NextRequest) => {
           // ONE ON ONE CHAT CREATION
           chat = (await Chat.create({
             chat_key,
-            name,
           })) as IChat;
 
           // create chat participants
@@ -139,26 +127,14 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    let messageAttachment: IMessageAttachments | null = null;
-
-    if (attachment) {
-      messageAttachment = await MessageAttachment.create({
-        file_url: attachment.file_url,
-        file_type: attachment.file_type,
-        file_size: attachment.file_size,
-      });
-    }
     // CREATE MESSAGE
     const message = await Message.create({
       chat_id: chat._id,
       sender_id: senderParticipant._id,
       content: content || '',
-      reply_to_id: reply_to || null,
-      message_type: attachment ? 'media' : 'text',
-      attachment_id: messageAttachment ? messageAttachment._id : null,
+      reply_to_id: isValidObjectId(reply_to) ? reply_to : undefined,
+      attachment: attachment,
     });
-
-    // HANDLE ATTACHMENT (IF EXISTS)
 
     return Response.json(
       {

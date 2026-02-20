@@ -1,5 +1,4 @@
 import { authMiddleware } from '@/lib/authMiddleware';
-import { ChatParticipants } from '@/models/Chat';
 import { Message } from '@/models/Message';
 import { connectDB } from '@/utils/db';
 import { NextRequest } from 'next/server';
@@ -26,6 +25,7 @@ export const PUT = async (
 
     const message = await Message.findOne({
       _id: message_id,
+      sender_id: authUser._id,
     });
 
     if (!message) {
@@ -34,20 +34,6 @@ export const PUT = async (
           message: 'Message not found',
         },
         { status: 404 },
-      );
-    }
-
-    const isMessageOwner = await ChatParticipants.exists({
-      _id: message.owner_id,
-      user_id: authUser._id,
-    });
-
-    if (isMessageOwner) {
-      return Response.json(
-        {
-          message: 'Not Allowed',
-        },
-        { status: 400 },
       );
     }
 
@@ -93,6 +79,7 @@ export const DELETE = async (
 
     const message = await Message.findOne({
       _id: message_id,
+      sender_id: authUser._id,
     });
 
     if (!message) {
@@ -101,20 +88,6 @@ export const DELETE = async (
           message: 'Message not found',
         },
         { status: 404 },
-      );
-    }
-
-    const isMessageOwner = await ChatParticipants.exists({
-      _id: message.owner_id,
-      user_id: authUser._id,
-    });
-
-    if (isMessageOwner) {
-      return Response.json(
-        {
-          message: 'Not Allowed',
-        },
-        { status: 400 },
       );
     }
 
