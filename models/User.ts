@@ -1,4 +1,10 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
+
+interface IOtp {
+  code: string;
+  expiresIn: Date;
+  isUsed: boolean;
+}
 
 export interface IUser extends Document {
   username: string;
@@ -8,8 +14,26 @@ export interface IUser extends Document {
   avatar_url?: string;
   last_seen?: Date;
   is_active: boolean;
+  otp: IOtp;
+  isVerified: boolean;
 }
 
+const otpSchema = new Schema<IOtp>({
+  code: {
+    type: String,
+    required: true,
+    maxLength: 6,
+    minLength: 6,
+  },
+  expiresIn: {
+    type: Date,
+    required: true,
+  },
+  isUsed: {
+    type: Boolean,
+    default: false,
+  },
+});
 const userSchema = new Schema<IUser>(
   {
     username: {
@@ -44,10 +68,15 @@ const userSchema = new Schema<IUser>(
     is_active: {
       type: Boolean,
     },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    otp: otpSchema,
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-const User = mongoose.models.User || mongoose.model("User", userSchema);
+const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 export default User;
