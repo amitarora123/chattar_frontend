@@ -1,0 +1,23 @@
+import { SignUpProps } from '@/types/auth.types';
+import { apiClient } from '../apiClient/apiClient';
+import { IUser } from '@/models/User';
+
+export const signUp = async (data: SignUpProps) => {
+  const res = await apiClient.post('/api/user/', data);
+  return res.data;
+};
+
+export const getUserDetails = async (user_id: string): Promise<IUser> => {
+  const res = await apiClient.get(`/api/user/${user_id}`);
+  return res.data;
+};
+
+export const checkUsernameUniqueness = async (username: string) => {
+  const res = await apiClient.get(`/api/user/unique/${username}`);
+  return res.data;
+};
+
+export const resendVerificationOtp = async (user_id: string) => {
+  const res = await apiClient.post(`/api/user/resend-otp/${user_id}`);
+  return res.data;
+};

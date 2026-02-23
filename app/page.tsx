@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import React, { useState } from 'react';
 
 interface SignedUploadParameters {
@@ -79,6 +80,9 @@ export default function Home() {
 
   return (
     <div>
+      <header>
+        <Image src={'/logo.svg'} alt="chattar" width={50} height={50} />
+      </header>
       <main>
         <input
           type="file"

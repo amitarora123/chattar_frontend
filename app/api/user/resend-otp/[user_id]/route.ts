@@ -4,6 +4,7 @@ import {
   sendOtp,
 } from '@/lib/service/otpService';
 import User from '@/models/User';
+import { connectDB } from '@/utils/db';
 import { NextRequest } from 'next/server';
 
 export const POST = async (
@@ -12,9 +13,11 @@ export const POST = async (
 ) => {
   try {
     const { user_id } = await params;
-
+    console.log(user_id);
     const otp = generateOtp().toString();
     const expiresIn = generateExpiresIn();
+
+    await connectDB();
 
     const user = await User.findByIdAndUpdate(user_id, {
       otp: {
@@ -31,7 +34,7 @@ export const POST = async (
         { status: 404 },
       );
     }
-    sendOtp(user.email, otp);
+    await sendOtp(user.email, otp);
 
     return Response.json(
       {
