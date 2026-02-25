@@ -1,9 +1,8 @@
 import { IUser } from '@/models/User';
 import jwt from 'jsonwebtoken';
-import { NextRequest } from 'next/server';
 
 export const authMiddleware = async (
-  request: NextRequest,
+  request: Request,
 ): Promise<Partial<IUser> | null> => {
   try {
     const token = request.headers.get('authorization')?.split(' ')[1];
@@ -19,6 +18,6 @@ export const authMiddleware = async (
     return decoded;
   } catch (error) {
     console.log('Auth Middleware Error', error);
-    return null
+    return null;
   }
 };

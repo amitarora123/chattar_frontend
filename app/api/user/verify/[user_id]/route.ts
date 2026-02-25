@@ -1,10 +1,9 @@
 import User, { IUser } from '@/models/User';
 import { connectDB } from '@/utils/db';
 import { isValidObjectId } from 'mongoose';
-import { NextRequest } from 'next/server';
 
 export const POST = async (
-  request: NextRequest,
+  request: Request,
   { params }: { params: Promise<{ user_id: string }> },
 ) => {
   try {
@@ -32,6 +31,12 @@ export const POST = async (
       );
     }
 
+    if (!user.otp) {
+      return Response.json({
+        message: 'OTP Invalid or Used, Request a new one',
+      });
+    }
+
     if (user.otp.code !== otp || user.otp.expiresIn.valueOf() < Date.now()) {
       return Response.json(
         {
@@ -41,17 +46,8 @@ export const POST = async (
       );
     }
 
-    if (user.otp.isUsed) {
-      return Response.json(
-        {
-          message: 'Otp already used, request a new one',
-        },
-        { status: 400 },
-      );
-    }
-
-    user.otp.isUsed = true;
     user.isVerified = true;
+    user.otp = undefined;
 
     await user.save();
 

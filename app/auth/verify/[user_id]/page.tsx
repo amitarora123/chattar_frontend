@@ -1,4 +1,4 @@
-import OtpInputForm from '@/components/auth/OtpInput';
+import VerificationForm from '@/components/auth/VerificationForm';
 
 interface VerifyPageProps {
   params: Promise<{
@@ -11,7 +11,7 @@ export default async function Verify({ params }: VerifyPageProps) {
 
   return (
     <div className="w-full h-screen flex items-center justify-center ">
-      <OtpInputForm user_id={user_id} />
+      <VerificationForm user_id={user_id} />
     </div>
   );
 }

@@ -22,13 +22,67 @@ import { checkUsernameUniqueness, signUp } from '@/lib/actions/user';
 import { AxiosError } from 'axios';
 import { Check, Loader2, X } from 'lucide-react';
 import useDebounce from '@/hooks/useDebounce';
+import GoogleLoginButton from '../ui/GoogleLogin';
 
-const signUpSchema = z.object({
-  username: z.string().min(4, 'Username must be of minimum 4 length'),
-  email: z.email(),
-  password: z.string().min(6, 'Password must be of minimum 6 length'),
-  confirmPassword: z.string().min(6, 'Password must be of minimum 6 length'),
-});
+const signUpSchema = z
+  .object({
+    username: z.string().min(4, 'Username must be at least 4 characters'),
+    email: z.string().email('Invalid email address'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    confirmPassword: z.string(),
+  })
+  .superRefine((data, ctx) => {
+    const { password, confirmPassword } = data;
+
+    // 1. Uppercase check
+    if (!/[A-Z]/.test(password)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Password must contain at least one uppercase letter',
+        path: ['password'],
+      });
+      return; // stop further checks
+    }
+
+    // 2. Lowercase check
+    if (!/[a-z]/.test(password)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Password must contain at least one lowercase letter',
+        path: ['password'],
+      });
+      return;
+    }
+
+    // 3. Number check
+    if (!/\d/.test(password)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Password must contain at least one number',
+        path: ['password'],
+      });
+      return;
+    }
+
+    // 4. Special character check
+    if (!/[@$!%*?&^#()[\]{}\-_=+|;:,.<>/?]/.test(password)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Password must contain at least one special character',
+        path: ['password'],
+      });
+      return;
+    }
+
+    // 5. Confirm password match (only if password valid)
+    if (password !== confirmPassword) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Passwords do not match',
+        path: ['confirmPassword'],
+      });
+    }
+  });
 
 type SignUpSchema = z.infer<typeof signUpSchema>;
 
@@ -147,12 +201,13 @@ const SignUpForm = () => {
           <Button
             type="submit"
             disabled={isPending}
-            className="bg-authBtn text-white opacity-70 hover:bg-authBtn hover:opacity-65"
+            className="bg-authBtn text-white cursor-pointer hover:bg-authBtn hover:opacity-85"
           >
-            {isPending ? 'Signing up' : 'Sign Up'}
+            {isPending ? 'Signing up...' : 'Sign Up'}
           </Button>
         </form>
-        <CardFooter className="p-0 mt-5 ">
+        <CardFooter className="p-0 mt-5 flex flex-col gap-3 items-start">
+          <GoogleLoginButton />
           <p className="font-bold text-sm">
             Don&apos;t have an account?{' '}
             <Link

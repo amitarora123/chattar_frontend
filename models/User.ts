@@ -1,39 +1,64 @@
+import { Timestamps } from '@/types/timestamps.types';
 import mongoose, { Document, Schema } from 'mongoose';
 
 interface IOtp {
   code: string;
   expiresIn: Date;
-  isUsed: boolean;
+  resendAvailableAt: Date;
 }
 
-export interface IUser extends Document {
+interface IPasswordReset {
+  token: string;
+  expiresIn: Date;
+}
+
+export interface IUser extends Document, Timestamps {
   username: string;
-  display_name: string;
+  display_name?: string;
   email: string;
-  password: string;
+  password?: string;
   avatar_url?: string;
   last_seen?: Date;
   is_active: boolean;
-  otp: IOtp;
   isVerified: boolean;
+  otp?: IOtp;
+  password_reset?: IPasswordReset;
 }
 
-const otpSchema = new Schema<IOtp>({
-  code: {
-    type: String,
-    required: true,
-    maxLength: 6,
-    minLength: 6,
+const otpSchema = new Schema<IOtp>(
+  {
+    code: {
+      type: String,
+      required: true,
+      maxLength: 6,
+      minLength: 6,
+    },
+    expiresIn: {
+      type: Date,
+      required: true,
+    },
+
+    resendAvailableAt: {
+      type: Date,
+      required: true,
+    },
   },
-  expiresIn: {
-    type: Date,
-    required: true,
+  { _id: false },
+);
+
+const passwordResetSchema = new Schema<IPasswordReset>(
+  {
+    expiresIn: {
+      type: Date,
+      required: true,
+    },
+    token: {
+      type: String,
+      required: true,
+    },
   },
-  isUsed: {
-    type: Boolean,
-    default: false,
-  },
-});
+  { _id: false },
+);
 const userSchema = new Schema<IUser>(
   {
     username: {
@@ -55,7 +80,7 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
     },
     avatar_url: {
       type: String,
@@ -73,6 +98,7 @@ const userSchema = new Schema<IUser>(
       default: false,
     },
     otp: otpSchema,
+    password_reset: passwordResetSchema,
   },
   { timestamps: true },
 );

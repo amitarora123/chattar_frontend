@@ -1,9 +1,9 @@
 import { authMiddleware } from '@/lib/authMiddleware';
 import { Contacts } from '@/models/Contact';
-import { NextRequest } from 'next/server';
+import { Request } from 'next/server';
 
 export const GET = async (
-  request: NextRequest,
+  request: Request,
   { params }: { params: Promise<{ contact_id: string }> },
 ) => {
   try {
@@ -54,7 +54,7 @@ export const GET = async (
   }
 };
 export const PUT = async (
-  request: NextRequest,
+  request: Request,
   { params }: { params: Promise<{ contact_id: string }> },
 ) => {
   try {
@@ -109,7 +109,7 @@ export const PUT = async (
 };
 
 export const DELETE = async (
-  request: NextRequest,
+  request: Request,
   { params }: { params: Promise<{ contact_id: string }> },
 ) => {
   try {

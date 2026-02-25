@@ -2,9 +2,9 @@ import { authMiddleware } from '@/lib/authMiddleware';
 import { Contacts } from '@/models/Contact';
 import User from '@/models/User';
 import { connectDB } from '@/utils/db';
-import { NextRequest } from 'next/server';
+import { Request } from 'next/server';
 
-export const POST = async (request: NextRequest) => {
+export const POST = async (request: Request) => {
   try {
     const authUser = await authMiddleware(request);
 

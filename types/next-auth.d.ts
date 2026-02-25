@@ -7,7 +7,8 @@ declare module 'next-auth' {
     email: string;
     username: string;
     token: string;
-    picture: string;
+    isVerified: boolean;
+    avatar_url: string;
   }
 
   interface Session {
@@ -15,6 +16,8 @@ declare module 'next-auth' {
       id: string;
       username: string;
       email: string;
+      isVerified: boolean;
+      avatar_url: string;
     };
     token: string;
   }
@@ -26,5 +29,7 @@ declare module 'next-auth/jwt' {
     email: string;
     username: string;
     token: string;
+    isVerified: boolean;
+    avatar_url: string;
   }
 }

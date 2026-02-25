@@ -1,12 +1,12 @@
 import { authMiddleware } from '@/lib/authMiddleware';
 import { Chat, ChatParticipants, IChat } from '@/models/Chat';
 import { Message } from '@/models/Message';
-import { NextRequest } from 'next/server';
+import { Request } from 'next/server';
 import { connectDB } from '@/utils/db';
 import { getChatKey } from '@/lib/service/chat';
 import { isValidObjectId } from 'mongoose';
 
-export const POST = async (request: NextRequest) => {
+export const POST = async (request: Request) => {
   try {
     const authUser = await authMiddleware(request);
 

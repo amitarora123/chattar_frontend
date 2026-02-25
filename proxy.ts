@@ -5,11 +5,19 @@ const protectedRoutes = ['/chats', '/profile'];
 const authRoutes = '/auth';
 
 export default auth((req) => {
-  const isLoggedIn = !!req.auth;
+  const pathname = req.nextUrl.pathname;
 
-  if (isLoggedIn) {
+  const user = req.auth?.user;
+
+  if (user && !user?.isVerified) {
+    if (!pathname.startsWith(`/auth/verify`)) {
+      return NextResponse.redirect(
+        new URL(`/auth/verify/${user?.id}`, req.url),
+      );
+    }
+  } else if (user && user.isVerified) {
     if (req.nextUrl.pathname.startsWith(authRoutes)) {
-      return NextResponse.redirect(new URL('/', req.url));
+      return NextResponse.redirect(new URL('/chats', req.url));
     }
   } else {
     const isProtectedRoute = protectedRoutes.some((route) => {

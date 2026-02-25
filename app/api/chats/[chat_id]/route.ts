@@ -2,10 +2,10 @@ import { authMiddleware } from '@/lib/authMiddleware';
 import { ChatParticipants } from '@/models/Chat';
 import { Message } from '@/models/Message';
 import { connectDB } from '@/utils/db';
-import { NextRequest } from 'next/server';
+import { Request } from 'next/server';
 
 export const GET = async (
-  request: NextRequest,
+  request: Request,
   { params }: { params: Promise<{ chat_id: string }> },
 ) => {
   const { chat_id } = await params;

@@ -1,11 +1,11 @@
 import { authMiddleware } from '@/lib/authMiddleware';
 import { Message } from '@/models/Message';
 import { connectDB } from '@/utils/db';
-import { NextRequest } from 'next/server';
+import { Request } from 'next/server';
 
 // update message
 export const PUT = async (
-  request: NextRequest,
+  request: Request,
   { params }: { params: Promise<{ message_id: string }> },
 ) => {
   try {
@@ -60,7 +60,7 @@ export const PUT = async (
 
 // delete message
 export const DELETE = async (
-  request: NextRequest,
+  request: Request,
   { params }: { params: Promise<{ message_id: string }> },
 ) => {
   try {

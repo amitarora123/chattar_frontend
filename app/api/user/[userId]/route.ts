@@ -2,10 +2,9 @@
 
 import User, { IUser } from '@/models/User';
 import { connectDB } from '@/utils/db';
-import { NextRequest, NextResponse } from 'next/server';
 
 export const GET = async (
-  _req: NextRequest,
+  _req: Request,
   { params }: { params: Promise<{ userId: string }> },
 ) => {
   const { userId } = await params;
@@ -17,17 +16,22 @@ export const GET = async (
       .lean()) as IUser;
 
     if (!user)
-      return NextResponse.json(
+      return Response.json(
         {
           message: 'User Not Found',
         },
         { status: 404 },
       );
 
-    return NextResponse.json(user);
+    return Response.json({
+      ...user,
+      otp: user.otp
+        ? { resendAvailableAt: user.otp.resendAvailableAt }
+        : undefined,
+    });
   } catch (error) {
     console.log('Error while fetching user', error);
-    return NextResponse.json(
+    return Response.json(
       {
         message: 'Something Went Wrong',
       },

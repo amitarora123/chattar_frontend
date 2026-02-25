@@ -1,9 +1,9 @@
 import { authMiddleware } from '@/lib/authMiddleware';
 import { Chat, ChatParticipants } from '@/models/Chat';
 import { connectDB } from '@/utils/db';
-import { NextRequest } from 'next/server';
+import { Request } from 'next/server';
 
-export const POST = async (request: NextRequest) => {
+export const POST = async (request: Request) => {
   try {
     const authUser = await authMiddleware(request);
 

@@ -1,17 +1,25 @@
-import type { NextRequest } from 'next/server';
 import { connectDB } from '@/utils/db';
 import User, { IUser } from '@/models/User';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-export const POST = async (request: NextRequest) => {
+export const POST = async (request: Request) => {
   try {
     await connectDB();
-    const { email, password }: IUser = await request.json();
+    const { email, password } = await request.json();
 
     const user: IUser | null = await User.findOne({ email });
 
     if (!user) {
+      return Response.json(
+        {
+          message: 'Invalid Credentials',
+        },
+        { status: 400 },
+      );
+    }
+
+    if (!user.password) {
       return Response.json(
         {
           message: 'Invalid Credentials',
@@ -35,14 +43,18 @@ export const POST = async (request: NextRequest) => {
       _id: user._id,
       username: user.username,
       email: user.email,
+      isVerified: user.isVerified,
     };
 
-    const token = jwt.sign(userDetails, process.env.JWT_SECRET!);
+    const token = jwt.sign(userDetails, process.env.JWT_SECRET!, {
+      expiresIn: '7d',
+    });
 
     return Response.json(
       {
         ...userDetails,
         token,
+        avatar_url: user.avatar_url,
       },
       { status: 201 },
     );

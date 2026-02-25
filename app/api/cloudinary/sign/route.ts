@@ -1,5 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
-import { NextRequest } from 'next/server';
+import { Request } from 'next/server';
 import { authMiddleware } from '@/lib/authMiddleware';
 
 cloudinary.config({
@@ -8,7 +8,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_APISECRET,
 });
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const user = await authMiddleware(request);
 

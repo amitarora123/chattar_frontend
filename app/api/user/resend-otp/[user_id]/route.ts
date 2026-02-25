@@ -1,30 +1,18 @@
-import {
-  generateExpiresIn,
-  generateOtp,
-  sendOtp,
-} from '@/lib/service/otpService';
-import User from '@/models/User';
+import { sendOtp } from '@/lib/service/emailService';
+import { generateExpiresIn, generateOtp, getSecondsLeft } from '@/lib/utils';
+import User, { IUser } from '@/models/User';
 import { connectDB } from '@/utils/db';
-import { NextRequest } from 'next/server';
 
 export const POST = async (
-  request: NextRequest,
+  request: Request,
   { params }: { params: Promise<{ user_id: string }> },
 ) => {
   try {
     const { user_id } = await params;
-    console.log(user_id);
-    const otp = generateOtp().toString();
-    const expiresIn = generateExpiresIn();
 
     await connectDB();
 
-    const user = await User.findByIdAndUpdate(user_id, {
-      otp: {
-        code: otp,
-        expiresIn,
-      },
-    });
+    const user: IUser | null = await User.findById(user_id);
 
     if (!user) {
       return Response.json(
@@ -34,11 +22,29 @@ export const POST = async (
         { status: 404 },
       );
     }
-    await sendOtp(user.email, otp);
+
+    if (user.otp && user.otp.resendAvailableAt > new Date()) {
+      return Response.json({
+        message: `Please Wait for ${getSecondsLeft(user.otp.resendAvailableAt)} to get next resend`,
+      });
+    }
+
+    const otp = generateOtp().toString();
+    const expiresIn = generateExpiresIn(5);
+
+    user.otp = {
+      code: otp,
+      expiresIn: new Date(expiresIn),
+      resendAvailableAt: new Date(Date.now() + 60 * 1000),
+    };
+
+    user.save();
+    sendOtp(user.email, otp);
 
     return Response.json(
       {
         message: 'OTP Resend Successfully',
+        resendAvailableAt: user.otp.resendAvailableAt,
       },
       { status: 200 },
     );
