@@ -1,13 +1,7 @@
-import Header from '@/components/layout/Header';
 import React from 'react';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <div>
-      <Header />
-      {children}
-    </div>
-  );
+  return <div className="h-screen  flex flex-col bg-authBg">{children}</div>;
 };
 
 export default Layout;
