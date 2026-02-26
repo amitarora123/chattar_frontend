@@ -1,7 +1,6 @@
 import { authMiddleware } from '@/lib/authMiddleware';
 import { Chat, ChatParticipants, IChat } from '@/models/Chat';
 import { Message } from '@/models/Message';
-import { Request } from 'next/server';
 import { connectDB } from '@/utils/db';
 import { getChatKey } from '@/lib/service/chat';
 import { isValidObjectId } from 'mongoose';
@@ -113,24 +112,10 @@ export const POST = async (request: Request) => {
       );
     }
 
-    // GET SENDER PARTICIPANT RECORD
-
-    const senderParticipant = await ChatParticipants.findOne({
-      chat_id: chat._id,
-      user_id: authUser._id,
-    });
-
-    if (!senderParticipant) {
-      return Response.json(
-        { message: 'Participant record not found' },
-        { status: 404 },
-      );
-    }
-
     // CREATE MESSAGE
     const message = await Message.create({
       chat_id: chat._id,
-      sender_id: senderParticipant._id,
+      sender_id: authUser._id,
       content: content || '',
       reply_to_id: isValidObjectId(reply_to) ? reply_to : undefined,
       attachment: attachment,

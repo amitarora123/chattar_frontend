@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-interface IMessageAttachment {
+export interface IMessageAttachment {
   file_url: string;
   file_type: string;
   file_size: number;
@@ -126,8 +126,8 @@ messageReactionSchema.index(
 export const Message =
   mongoose.models.Message || mongoose.model('Message', messageSchema);
 
-export const MessageReadsSchema =
-  mongoose.models.MessageReadsSchema ||
+export const MessageRead =
+  mongoose.models.MessageRead ||
   mongoose.model('MessageRead', messageReadsSchema);
 
 export const MessageReaction =
