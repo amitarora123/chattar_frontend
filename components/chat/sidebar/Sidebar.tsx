@@ -12,10 +12,7 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ className, type }: SidebarProps) => {
-  const SIDEBAR_COMPONENTS: Record<
-    SidebarType,
-    React.ComponentType<unknown>
-  > = {
+  const SIDEBAR_COMPONENTS: Record<SidebarType, React.ComponentType> = {
     AllChats,
     NewChat,
     NewContact,

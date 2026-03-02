@@ -19,9 +19,13 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
       <SessionProvider>
         <TooltipProvider>
           {children}
-          {process.env.NODE_ENV === 'development' && (
-            <ReactQueryDevtools initialIsOpen={false} />
-          )}
+          {/* {process.env.NODE_ENV === 'development' && (
+            <ReactQueryDevtools
+              position="top"
+              buttonPosition="bottom-left"
+              initialIsOpen={false}
+            />
+          )} */}
         </TooltipProvider>
       </SessionProvider>
     </QueryClientProvider>

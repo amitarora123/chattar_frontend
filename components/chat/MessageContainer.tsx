@@ -15,6 +15,7 @@ const MessageContainer = ({ session }: { session: Session | null }) => {
     queryKey: ['chat-messages', { selectedChatId, selectedRecipientId }],
     queryFn: () => getChatMessages(token!, selectedChatId, selectedRecipientId),
     enabled: !!token && (!!selectedChatId || !!selectedRecipientId),
+    
   });
 
   useEffect(() => {

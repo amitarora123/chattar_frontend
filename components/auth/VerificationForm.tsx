@@ -99,7 +99,7 @@ const VerificationForm = ({ user_id }: { user_id: string }) => {
   const [localPart, domain] = email.split('@');
 
   return (
-    <Card className="auth-card text-white min-w-80 sm:min-w-md ">
+    <Card className=" text-white min-w-80 sm:min-w-md ">
       <CardHeader>
         <CardTitle className="text-xl font-bold ">Verify Your Email</CardTitle>
         <CardDescription>

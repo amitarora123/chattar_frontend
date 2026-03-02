@@ -10,6 +10,7 @@ import { useSession } from 'next-auth/react';
 import { createContacts } from '@/lib/actions/contacts';
 import { toast } from 'sonner';
 import { Button } from '../../ui/button';
+import { AxiosError } from 'axios';
 
 const NewContact = () => {
   const { data: session } = useSession();
@@ -49,6 +50,11 @@ const NewContact = () => {
       setUsername('');
       changeSidebar('NewChat');
     },
+    onError: (error) => {
+      const axiosError = error as AxiosError;
+      const { message } = axiosError?.response?.data as { message: string };
+      toast.error(message);
+    },
   });
 
   /* ---------------- Submit ---------------- */
@@ -78,7 +84,7 @@ const NewContact = () => {
   /* ---------------- UI ---------------- */
 
   return (
-    <div className="p-5 text-white bg-[#0f172a] min-h-screen">
+    <div className="  min-h-screen">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
@@ -97,7 +103,7 @@ const NewContact = () => {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Enter name"
-            className="w-full mt-1 bg-transparent border-b border-blue-700 focus:border-blue-400 outline-none py-2"
+            className="w-full mt-1 bg-transparent border-b border-slate-600  focus:border-blue-400 outline-none py-2"
           />
         </div>
 
@@ -107,7 +113,7 @@ const NewContact = () => {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Enter username"
-            className="w-full mt-1 bg-transparent border-b border-blue-700 focus:border-blue-400 outline-none py-2"
+            className="w-full mt-1 bg-transparent border-b border-slate-600  focus:border-blue-400 outline-none py-2"
           />
         </div>
 

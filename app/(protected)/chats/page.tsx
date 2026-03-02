@@ -18,9 +18,9 @@ const ChatsPage = () => {
       {/* Sidebar */}
       <div
         className={`
-          relative col-span-1 overflow-hidden h-full
-          ${isChatOpen ? 'hidden lg:block' : 'block'}
-        `}
+    relative col-span-1 overflow-hidden h-full
+    ${isChatOpen && sidebar === 'AllChats' ? 'hidden lg:block' : 'block'}
+  `}
       >
         <Sidebar type="AllChats" className="h-full" />
 
@@ -54,14 +54,10 @@ const ChatsPage = () => {
       </div>
 
       {/* Chat Container */}
-      <div
-        className={`
-          col-span-1 lg:col-span-3 h-full
-          ${isChatOpen ? 'block' : 'hidden lg:block'}
-        `}
-      >
-        <ChatContainer className="lg:col-span-3" />
-      </div>
+
+      {isChatOpen && (
+        <ChatContainer className="z-50 bg-background lg:col-span-3" />
+      )}
     </main>
   );
 };
