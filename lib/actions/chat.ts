@@ -16,18 +16,15 @@ export const getChatMessages = async (
   chat_id?: string | null,
   recipient_id?: string | null,
 ): Promise<Message[]> => {
-  const res = await apiClient.get(
-    `/api/chats/messages`,
-    {
-      params: {
-        chat_id,
-        recipient_id,
-      },
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  const res = await apiClient.get(`/api/chats/messages`, {
+    params: {
+      chat_id,
+      recipient_id,
     },
-  );
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   return res.data;
 };
@@ -54,5 +51,23 @@ export const getChatById = async (
     },
   });
 
+  return res.data;
+};
+
+export const createGroup = async (
+  token: string,
+  data: {
+    memberIds: string[];
+    adminIds: string[];
+    name: string;
+    description?: string;
+    avatar_url?: string;
+  },
+) => {
+  const res = await apiClient.post('/api/chats/group', data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   return res.data;
 };

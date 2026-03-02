@@ -72,7 +72,7 @@ const NewChat = () => {
         {/* New Group */}
         <button
           onClick={() => {
-            changeSidebar('NewGroup');
+            changeSidebar('AddGroupMembers');
           }}
           className="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-colors"
         >

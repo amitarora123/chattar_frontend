@@ -26,28 +26,38 @@ const ChatsPage = () => {
 
         <Sidebar
           type="NewChat"
-          className={`absolute inset-0 transition-transform duration-300 ${
+          className={`absolute z-50 inset-0 transition-transform duration-300 ${
             sidebar === 'NewChat' ? 'translate-x-0' : '-translate-x-full'
           }`}
         />
 
         <Sidebar
           type="DialPad"
-          className={`absolute inset-0 transition-transform duration-300 ${
+          className={`absolute z-50 inset-0 transition-transform duration-300 ${
             sidebar === 'DialPad' ? 'translate-x-0' : 'translate-x-full'
           }`}
         />
 
         <Sidebar
           type="NewContact"
-          className={`absolute inset-0 transition-transform duration-300 ${
+          className={`absolute z-50 inset-0 transition-transform duration-300 ${
             sidebar === 'NewContact' ? 'translate-x-0' : 'translate-x-full'
           }`}
         />
 
         <Sidebar
+          type="AddGroupMembers"
+          className={`absolute z-50 inset-0 transition-transform duration-300 ${
+            sidebar === 'AddGroupMembers'
+              ? 'translate-x-0'
+              : sidebar === 'NewGroup'
+                ? '-translate-x-full'
+                : 'translate-x-full'
+          } `}
+        />
+        <Sidebar
           type="NewGroup"
-          className={`absolute inset-0 transition-transform duration-300 ${
+          className={`absolute z-50 inset-0 transition-transform duration-300 ${
             sidebar === 'NewGroup' ? 'translate-x-0' : 'translate-x-full'
           }`}
         />
