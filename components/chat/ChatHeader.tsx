@@ -1,13 +1,19 @@
 import { getChatById, getRecipientDetails } from '@/lib/actions/chat';
 import { useChatStore } from '@/lib/store/chatStore';
 import { useQuery } from '@tanstack/react-query';
-import { User } from 'lucide-react';
+import { User, X } from 'lucide-react';
 import { Session } from 'next-auth';
 import Image from 'next/image';
 import { Separator } from '../ui/separator';
+import { Button } from '../ui/button';
 
 const ChatHeader = ({ session }: { session: Session | null }) => {
-  const { selectedChatId, selectedRecipientId } = useChatStore();
+  const {
+    selectedChatId,
+    selectedRecipientId,
+    setSelectedChatId,
+    setSelectedRecipientId,
+  } = useChatStore();
 
   const { token } = session || {};
 
@@ -39,7 +45,7 @@ const ChatHeader = ({ session }: { session: Session | null }) => {
   return (
     <>
       <header className="px-4 py-3  ">
-        <div>
+        <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             {avatar_url.length > 0 ? (
               <Image
@@ -54,6 +60,15 @@ const ChatHeader = ({ session }: { session: Session | null }) => {
             )}
             <p>{displayName}</p>
           </div>
+          <Button
+            onClick={() => {
+              setSelectedChatId(null);
+              setSelectedRecipientId(null);
+            }}
+            variant="outline"
+          >
+            <X />
+          </Button>
         </div>
       </header>
       <Separator />

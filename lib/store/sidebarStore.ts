@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
-type SidebarType = 'DialPad' | 'NewChat' | 'NewContact' | null;
+export type SidebarType =
+  | 'DialPad'
+  | 'NewChat'
+  | 'NewContact'
+  | 'NewGroup'
+  | 'AllChats';
 
 interface SidebarState {
   sidebar: SidebarType;
@@ -12,7 +17,7 @@ export const useSidebarStore = create<SidebarState>()(
   devtools(
     persist(
       (set) => ({
-        sidebar: null,
+        sidebar: 'AllChats',
         changeSidebar: (val) => {
           set({ sidebar: val });
         },

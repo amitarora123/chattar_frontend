@@ -1,26 +1,25 @@
-'use client';
-
 import { useQuery } from '@tanstack/react-query';
-import { useSession } from 'next-auth/react';
-import { Input } from '../ui/input';
 import Image from 'next/image';
-import { ArrowLeft, Grip, Search, User } from 'lucide-react';
+import {
+  ArrowLeft,
+  Grip,
+  Search,
+  User,
+  UserPlus,
+  UsersRound,
+} from 'lucide-react';
 import { useSidebarStore } from '@/lib/store/sidebarStore';
-import { getMyContacts } from '@/lib/actions/contacts';
-import clsx from 'clsx';
 import { useChatStore } from '@/lib/store/chatStore';
-import { UsersRound, UserPlus } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { useSession } from 'next-auth/react';
+import { getMyContacts } from '@/lib/actions/contacts';
+import { Input } from '../../ui/input';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
 
-interface NewChatSidebarProps {
-  className: string;
-}
-
-const NewChatSidebar = ({ className }: NewChatSidebarProps) => {
+const NewChat = () => {
+  const { data: session } = useSession();
   const { changeSidebar } = useSidebarStore();
   const { setSelectedRecipientId } = useChatStore();
 
-  const { data: session } = useSession();
   const { token } = session || {};
 
   const { data: contacts } = useQuery({
@@ -30,18 +29,13 @@ const NewChatSidebar = ({ className }: NewChatSidebarProps) => {
   });
 
   return (
-    <section
-      className={clsx(
-        'border-r transition-transform bg-background  duration-300 ease-in-out pt-3 px-3 lg:col-span-1 max-lg:h-screen',
-        className,
-      )}
-    >
+    <>
       {/* Logo */}
       <div className="flex w-full justify-between items-center">
         <div className="flex gap-3 items-center">
           <button
             className="rounded-full p-2 transition-colors cursor-pointer duration-200 hover:bg-neutral-800"
-            onClick={() => changeSidebar(null)}
+            onClick={() => changeSidebar('AllChats')}
           >
             <ArrowLeft size={20} />
           </button>
@@ -78,8 +72,7 @@ const NewChatSidebar = ({ className }: NewChatSidebarProps) => {
         {/* New Group */}
         <button
           onClick={() => {
-            // TODO: open create group flow
-            console.log('Create new group');
+            changeSidebar('NewGroup');
           }}
           className="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-colors"
         >
@@ -144,8 +137,8 @@ const NewChatSidebar = ({ className }: NewChatSidebarProps) => {
           </li>
         ))}
       </ul>
-    </section>
+    </>
   );
 };
 
-export default NewChatSidebar;
+export default NewChat;

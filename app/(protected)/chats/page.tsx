@@ -1,32 +1,67 @@
 'use client';
 import ChatContainer from '@/components/chat/ChatContainer';
-import ChatsSidebar from '@/components/chat/ChatsSidebar';
-import DialPadSidebar from '@/components/chat/DialPadSidebar';
-import NewChatSidebar from '@/components/chat/NewChatSidebar';
 import { useSidebarStore } from '@/lib/store/sidebarStore';
+import { useChatStore } from '@/lib/store/chatStore';
+import Sidebar from '@/components/chat/sidebar/Sidebar';
 
 const ChatsPage = () => {
   const { sidebar } = useSidebarStore();
+  const { selectedChatId, selectedRecipientId } = useChatStore();
 
+  const isChatOpen = !!selectedChatId || !!selectedRecipientId;
+  console.log({
+    selectedChatId,
+    selectedRecipientId,
+  });
   return (
-    <main className="h-full grid  lg:grid-cols-4 grid-cols-1 overflow-hidden flex-1">
-      <div className="relative col-span-1 overflow-hidden h-full">
-        <ChatsSidebar className="h-full" />
+    <main className="h-full grid lg:grid-cols-4 grid-cols-1 overflow-hidden flex-1">
+      {/* Sidebar */}
+      <div
+        className={`
+          relative col-span-1 overflow-hidden h-full
+          ${isChatOpen ? 'hidden lg:block' : 'block'}
+        `}
+      >
+        <Sidebar type="AllChats" className="h-full" />
 
-        <NewChatSidebar
+        <Sidebar
+          type="NewChat"
           className={`absolute inset-0 transition-transform duration-300 ${
             sidebar === 'NewChat' ? 'translate-x-0' : '-translate-x-full'
           }`}
         />
-        <DialPadSidebar
+
+        <Sidebar
+          type="DialPad"
           className={`absolute inset-0 transition-transform duration-300 ${
-            sidebar !== null && sidebar !== 'NewChat'
-              ? 'translate-x-0'
-              : 'translate-x-full'
+            sidebar === 'DialPad' ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        />
+
+        <Sidebar
+          type="NewContact"
+          className={`absolute inset-0 transition-transform duration-300 ${
+            sidebar === 'NewContact' ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        />
+
+        <Sidebar
+          type="NewGroup"
+          className={`absolute inset-0 transition-transform duration-300 ${
+            sidebar === 'NewGroup' ? 'translate-x-0' : 'translate-x-full'
           }`}
         />
       </div>
-      <ChatContainer className="lg:col-span-3" />
+
+      {/* Chat Container */}
+      <div
+        className={`
+          col-span-1 lg:col-span-3 h-full
+          ${isChatOpen ? 'block' : 'hidden lg:block'}
+        `}
+      >
+        <ChatContainer className="lg:col-span-3" />
+      </div>
     </main>
   );
 };
