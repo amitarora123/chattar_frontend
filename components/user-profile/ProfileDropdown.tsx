@@ -14,19 +14,25 @@ import { signOut, useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-const ProfileDropdown = () => {
+const ProfileDropdown = ({
+  className = '',
+  size = 40,
+}: {
+  className?: string;
+  size?: number;
+}) => {
   const { data } = useSession();
 
   return (
-    <div className="mr-5">
+    <div className={className}>
       <DropdownMenu>
         <DropdownMenuTrigger className="cursor-pointer" asChild>
           {data?.user.avatar_url ? (
             <Image
               className="rounded-full"
               src={data.user.avatar_url}
-              width={50}
-              height={50}
+              width={size}
+              height={size}
               alt={data.user.username}
             />
           ) : (

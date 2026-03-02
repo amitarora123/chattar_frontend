@@ -1,7 +1,6 @@
 import { authMiddleware } from '@/lib/authMiddleware';
-import { Contacts } from '@/models/Contact';
+import { Contacts, IContacts } from '@/models/Contact';
 import { connectDB } from '@/utils/db';
-import { Request } from 'next/server';
 
 export const GET = async (request: Request) => {
   try {
@@ -18,16 +17,19 @@ export const GET = async (request: Request) => {
 
     await connectDB();
 
-    const userContacts = await Contacts.find({
+    const userContacts: IContacts[] = await Contacts.find({
       owner_id: authUser._id,
-    }).lean();
+    })
+      .populate('user_id')
+      .select('-user_id.otp -user_id.password -user_id.password_reset')
+      .lean();
 
-    return Response.json(
-      {
-        contacts: userContacts,
-      },
-      { status: 200 },
-    );
+    const formattedUserContacts = userContacts.map((c) => ({
+      _id: c._id,
+      name: c.name,
+      user: c.user_id,
+    }));
+    return Response.json(formattedUserContacts, { status: 200 });
   } catch (error) {
     console.log('User Contact fetching Error:', error);
 

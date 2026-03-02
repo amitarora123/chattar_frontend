@@ -75,16 +75,20 @@ export const POST = async (request: Request) => {
           })) as IChat;
 
           // create chat participants
-          await ChatParticipants.insertMany([
-            {
-              chat_id: chat._id,
-              user_id: authUser._id,
-            },
-            {
+
+          // making current user a chat participant
+          await ChatParticipants.create({
+            chat_id: chat._id,
+            user_id: authUser._id,
+          });
+
+          // making other user a chat participant if it is not a self chat
+          if (recipient_id != authUser._id) {
+            await ChatParticipants.create({
               chat_id: chat._id,
               user_id: recipient_id,
-            },
-          ]);
+            });
+          }
         }
       }
       // we got the valid chat_id

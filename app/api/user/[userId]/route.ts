@@ -4,7 +4,7 @@ import User, { IUser } from '@/models/User';
 import { connectDB } from '@/utils/db';
 
 export const GET = async (
-  _req: Request,
+  _: Request,
   { params }: { params: Promise<{ userId: string }> },
 ) => {
   const { userId } = await params;
@@ -12,7 +12,7 @@ export const GET = async (
   try {
     await connectDB();
     const user = (await User.findOne({ _id: userId })
-      .select('-password')
+      .select('-password -password_reset')
       .lean()) as IUser;
 
     if (!user)

@@ -1,7 +1,6 @@
 import { authMiddleware } from '@/lib/authMiddleware';
 import { Message } from '@/models/Message';
 import { connectDB } from '@/utils/db';
-import { Request } from 'next/server';
 
 // update message
 export const PUT = async (

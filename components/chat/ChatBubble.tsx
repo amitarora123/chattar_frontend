@@ -1,5 +1,5 @@
 import { getMessageDateTimeStamp } from '@/lib/utils';
-import { Message } from '@/types/Message.types';
+import { Message } from '@/types/message.types';
 import clsx from 'clsx';
 
 interface ChatBubbleProps {
@@ -15,7 +15,7 @@ const ChatBubble = ({
     <div
       className={clsx(
         'flex items-center',
-        `${sender._id === userId ? 'justify-end' : 'justify-start'}`,
+        `${sender.user._id === userId ? 'justify-end' : 'justify-start'}`,
       )}
     >
       <div className=" text-white bg-neutral-800 rounded-lg px-3 py-2">

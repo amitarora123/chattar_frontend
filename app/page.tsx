@@ -19,7 +19,6 @@ export default function Home() {
     try {
       const file = e.target.files?.[0];
 
-      console.log(file);
       if (!file) {
         alert('File not found');
         return;
@@ -38,7 +37,6 @@ export default function Home() {
       const response: SignedUploadParameters = await res.json();
 
       setUploadParameters(response);
-      console.log(response);
       setTimeout(() => {
         setUploadParameters(null);
       }, 1000);
@@ -48,7 +46,6 @@ export default function Home() {
   };
 
   async function uploadToCloudinary() {
-    console.log(uploadParameters);
     if (!file) {
       alert('please select a file');
       return;

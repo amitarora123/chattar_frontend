@@ -1,3 +1,6 @@
+import { IMessageAttachment } from '@/models/Message';
+import { ChatParticipant } from './chat.types';
+
 export interface Message {
   _id: string;
   content: string;
@@ -6,9 +9,14 @@ export interface Message {
   updatedAt: string;
   is_edited: boolean;
   is_deleted: boolean;
-  sender: {
-    _id: string;
-    username: string;
-    avatar_url: string;
-  };
+  sender: ChatParticipant;
+}
+
+export interface SendMessageProps {
+  chat_id?: string;
+  content: string;
+  recipient_id?: string;
+  attachment?: IMessageAttachment;
+  reply_to?: string;
+  is_group: boolean;
 }

@@ -1,3 +1,4 @@
+import { Timestamps } from '@/types/timestamps.types';
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
 interface IGroupMetaData {
@@ -7,7 +8,7 @@ interface IGroupMetaData {
   created_by: Types.ObjectId;
 }
 
-export interface IChat extends Document {
+export interface IChat extends Document, Timestamps {
   is_group: boolean;
   chat_key?: string;
   groupMetaData?: IGroupMetaData;

@@ -1,9 +1,12 @@
 import { authMiddleware } from '@/lib/authMiddleware';
-import { ChatParticipants } from '@/models/Chat';
+import { ChatParticipants, IChat } from '@/models/Chat';
 import { Contacts } from '@/models/Contact';
 import { Message } from '@/models/Message';
 import { connectDB } from '@/utils/db';
 import '@/models';
+import { IUser } from '@/models/User';
+import { getChatKey } from '@/lib/service/chat';
+
 export const GET = async (request: Request) => {
   try {
     const authUser = await authMiddleware(request);
@@ -17,7 +20,12 @@ export const GET = async (request: Request) => {
 
     await connectDB();
 
-    // 1️⃣ Get chats where user is participant
+    const selfChatKey = getChatKey(
+      authUser._id!.toString(),
+      authUser._id!.toString(),
+    );
+
+    // 1 Get chats where user is participant
     const chatParticipants = await ChatParticipants.find({
       user_id: authUser._id,
       left_at: null,
@@ -31,15 +39,14 @@ export const GET = async (request: Request) => {
       return Response.json([], { status: 200 });
     }
 
-    // 2️⃣ Get all other participants for 1-1 chats
+    // 2 Get all other participants for 1-1 chats
     const allParticipants = await ChatParticipants.find({
       chat_id: { $in: chatIds },
-      user_id: { $ne: authUser._id },
     })
       .populate('user_id')
       .lean();
 
-    // 3️⃣ Get user contacts
+    // 3 Get user contacts
     const contacts = await Contacts.find({
       owner_id: authUser._id,
     }).lean();
@@ -95,54 +102,57 @@ export const GET = async (request: Request) => {
     const lastMessageMap = new Map(
       lastMessages.map((m) => [m._id.toString(), m.lastMessage]),
     );
+    const response = chatParticipants.map((cp) => {
+      const chat = cp.chat_id as IChat;
+      const lastMessage = lastMessageMap.get(chat._id.toString()) || null;
 
-    // 5 Build final response
-    const response = chatParticipants
-      .map((cp) => {
-        const chat = cp.chat_id;
-        const lastMessage = lastMessageMap.get(chat._id.toString()) || null;
+      // Get participants for this chat
+      const participantsForChat = allParticipants.filter(
+        (p) => p.chat_id.toString() === chat._id.toString(),
+      );
 
-        // 🔹 GROUP CHAT
-        if (chat.is_group) {
+      const formattedParticipants = participantsForChat
+        .filter((p) => {
+          // If NOT group → exclude auth user
+          if (!chat.is_group && chat.chat_key != selfChatKey) {
+            return p.user_id._id.toString() !== authUser._id!.toString();
+          }
+
+          // If group → include everyone
+          return true;
+        })
+        .map((p) => {
+          const user = p.user_id as IUser;
+
           return {
-            _id: chat._id,
-            name: chat.groupMetaData?.name,
-            is_group: true,
-            avatar: chat.groupMetaData?.avatar_url,
-            createdAt: chat.createdAt,
-            last_message: lastMessage,
+            user: {
+              _id: user._id.toString(),
+              username: user.username,
+              avatar_url: user.avatar_url ?? null,
+            },
+            groupRole: p.groupRole,
+            isContact: contactMap.has(user._id.toString()),
+            contactName: contactMap.get(user._id.toString()) ?? null,
           };
-        }
+        });
 
-        // 🔹 ONE-ON-ONE CHAT
-        const participants = allParticipants.filter(
-          (p) => p.chat_id.toString() === chat._id.toString(),
-        );
-
-        const otherUser = participants[0]?.user_id;
-
-        if (!otherUser) {
-          return null;
-        }
-
-        const displayName =
-          contactMap.get(otherUser._id.toString()) || otherUser.username;
-
-        return {
-          _id: chat._id,
-          name: displayName,
-          is_group: false,
-          avatar: otherUser.avatar_url,
-          createdAt: chat.createdAt,
-          last_message: lastMessage,
-        };
-      })
-      .filter(Boolean);
-
+      return {
+        _id: chat._id.toString(),
+        is_group: chat.is_group,
+        groupMetaData: chat.is_group ? chat.groupMetaData : undefined,
+        last_message: lastMessage,
+        participants: formattedParticipants,
+        createdAt: chat.createdAt,
+        updatedAt: chat.updatedAt,
+      };
+    });
     return Response.json(response, { status: 200 });
   } catch (error) {
     console.log('User Chats Fetching Error:', error);
-
-    return Response.json({ message: 'Internal Server Error' }, { status: 500 });
+    const { message } = error as { message: string };
+    return Response.json(
+      { message: message || 'Internal Server Error' },
+      { status: 500 },
+    );
   }
 };

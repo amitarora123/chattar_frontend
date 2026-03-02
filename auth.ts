@@ -54,8 +54,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         try {
           const data = await googleLogin(account.id_token);
 
-          console.log(data);
-
           // Attach backend data to user object
           user.id = data._id;
           user.username = data.username;

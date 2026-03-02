@@ -1,15 +1,16 @@
 import { authMiddleware } from '@/lib/authMiddleware';
 import { ChatParticipants } from '@/models/Chat';
-import { Message } from '@/models/Message';
+import { Contacts } from '@/models/Contact';
 import { connectDB } from '@/utils/db';
+import '@/models';
 
 export const GET = async (
   request: Request,
   { params }: { params: Promise<{ chat_id: string }> },
 ) => {
-  const { chat_id } = await params;
-
   try {
+    const { chat_id } = await params;
+
     const authUser = await authMiddleware(request);
 
     if (!authUser) {
@@ -21,48 +22,87 @@ export const GET = async (
 
     await connectDB();
 
-    // ✅ Check if user is part of chat
+    // 🔹 Ensure user is participant of chat
     const chatParticipant = await ChatParticipants.findOne({
-      chat_id,
       user_id: authUser._id,
-    });
+      left_at: null,
+      chat_id,
+    })
+      .populate('chat_id')
+      .lean();
 
     if (!chatParticipant) {
       return Response.json(
-        { message: 'Chat does not exist or access denied' },
+        { message: 'User is not a participant of this chat' },
         { status: 403 },
       );
     }
 
-    // ✅ Fetch messages with sender populated
-    const messages = await Message.find({
+    const chat = chatParticipant.chat_id;
+
+    // 🔹 Fetch all active participants
+    const participants = await ChatParticipants.find({
       chat_id,
-      is_deleted: false,
+      left_at: null,
     })
-      .populate('sender_id', 'username avatar_url')
-      .sort({ createdAt: 1 }) // optional (oldest first)
+      .populate({
+        path: 'user_id',
+        select: '_id username avatar_url',
+      })
+      .select('user_id role')
       .lean();
 
-    // ✅ Transform to match your frontend Message interface
-    const formattedMessages = messages.map((msg) => ({
-      _id: msg._id.toString(),
-      content: msg.content,
-      chat_id: msg.chat_id.toString(),
-      createdAt: msg.createdAt,
-      updatedAt: msg.updatedAt,
-      is_edited: msg.is_edited,
-      is_deleted: msg.is_deleted,
-      sender: {
-        _id: msg.sender_id?._id?.toString(),
-        username: msg.sender_id?.username,
-        avatar_url: msg.sender_id?.avatar_url,
+    // 🔹 Fetch contacts for current user
+    const contacts = await Contacts.find({
+      owner_id: authUser._id,
+    })
+      .select('user_id name')
+      .lean();
+
+    const contactMap = new Map(
+      contacts.map((c) => [c.user_id.toString(), c.name]),
+    );
+
+    // 🔹 Format participants
+    const formattedParticipants = participants
+      .filter((p) => {
+        // If NOT group chat → exclude auth user
+        if (!chat.is_group) {
+          return p.user_id._id.toString() !== authUser._id!.toString();
+        }
+
+        // If group → include everyone
+        return true;
+      })
+      .map((p) => {
+        const userId = p.user_id._id.toString();
+
+        return {
+          user: {
+            _id: userId,
+            username: p.user_id.username,
+            avatar_url: p.user_id.avatar_url ?? null,
+          },
+          role: p.role,
+          isContact: contactMap.has(userId),
+          contactName: contactMap.get(userId) ?? null,
+        };
+      });
+
+    return Response.json(
+      {
+        ...chat,
+        participants: formattedParticipants,
       },
-    }));
-
-    return Response.json(formattedMessages, { status: 200 });
+      { status: 200 },
+    );
   } catch (error) {
-    console.log(`Error fetching messages for chat_id: ${chat_id}`, error);
+    console.error('Chat Fetch Error:', error);
+    const { message } = error as { message?: string };
 
-    return Response.json({ message: 'Internal Server Error' }, { status: 500 });
+    return Response.json(
+      { message: message || 'Internal Server Error' },
+      { status: 500 },
+    );
   }
 };

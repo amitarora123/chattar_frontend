@@ -14,7 +14,7 @@ const GoogleLoginButton = () => {
           redirectTo: '/chats',
         })
       }
-      className="w-full"
+      className="w-full hover:opacity-80 hover:text-white cursor-pointer"
     >
       Login With Google <FcGoogle />
     </Button>

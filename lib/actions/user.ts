@@ -1,13 +1,14 @@
 import { SignUpProps } from '@/types/auth.types';
 import { apiClient } from '../apiClient/apiClient';
-import { IUser } from '@/models/User';
+import { User } from '@/types/user.types';
+import { ChatParticipant } from '@/types/chat.types';
 
 export const signUp = async (data: SignUpProps) => {
   const res = await apiClient.post('/api/user/', data);
   return res.data;
 };
 
-export const getUserDetails = async (user_id: string): Promise<IUser> => {
+export const getUserDetails = async (user_id: string): Promise<User> => {
   const res = await apiClient.get(`/api/user/${user_id}`);
   return res.data;
 };
@@ -55,5 +56,21 @@ export const googleLogin = async (id_token: string) => {
     id_token,
   });
 
+  return res.data;
+};
+
+export const searchUsers = async ({
+  username,
+  email,
+}: {
+  username?: string;
+  email?: string;
+}): Promise<ChatParticipant[]> => {
+  const res = await apiClient.get('/api/user/search', {
+    params: {
+      ...(username && { username }),
+      ...(email && { email }),
+    },
+  });
   return res.data;
 };

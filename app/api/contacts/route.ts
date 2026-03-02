@@ -2,7 +2,6 @@ import { authMiddleware } from '@/lib/authMiddleware';
 import { Contacts } from '@/models/Contact';
 import User from '@/models/User';
 import { connectDB } from '@/utils/db';
-import { Request } from 'next/server';
 
 export const POST = async (request: Request) => {
   try {
@@ -17,12 +16,12 @@ export const POST = async (request: Request) => {
       );
     }
 
-    const { email, name } = await request.json();
+    const { username, name } = await request.json();
 
     await connectDB();
 
     const user = await User.findOne({
-      email,
+      username,
     });
 
     if (!user) {

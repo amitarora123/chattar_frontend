@@ -40,7 +40,6 @@ const SignInForm = () => {
   });
 
   const handleSignIn = async ({ email, password }: SignInSchema) => {
-    console.log('sign in called');
     try {
       setIsPending(true);
       const res = await signIn('credentials', {
@@ -62,7 +61,7 @@ const SignInForm = () => {
   };
 
   return (
-    <Card className="auth-card rounded-sm  text-white min-w-80 sm:min-w-90">
+    <Card className=" rounded-sm  text-white min-w-80 sm:min-w-90">
       <CardHeader>
         <CardTitle className="text-xl font-bold">Sign In</CardTitle>
         <CardDescription>Welcome back to Chattar</CardDescription>
