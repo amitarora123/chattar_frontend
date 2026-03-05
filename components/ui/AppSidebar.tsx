@@ -9,13 +9,6 @@ const AppSidebar = () => {
           <ProfileDropdown size={30} />
         </div>
       </div>
-
-      <div className="w-screen z-30 fixed lg:hidden bottom-0 items-center bg-authBg p-4 border-r flex  justify-between">
-        <div></div>
-        <div className="flex flex-col items-center">
-          <ProfileDropdown size={30} />
-        </div>
-      </div>
     </>
   );
 };

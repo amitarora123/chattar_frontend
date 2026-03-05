@@ -15,7 +15,6 @@ const MessageContainer = ({ session }: { session: Session | null }) => {
     queryKey: ['chat-messages', { selectedChatId, selectedRecipientId }],
     queryFn: () => getChatMessages(token!, selectedChatId, selectedRecipientId),
     enabled: !!token && (!!selectedChatId || !!selectedRecipientId),
-    
   });
 
   useEffect(() => {
@@ -25,9 +24,10 @@ const MessageContainer = ({ session }: { session: Session | null }) => {
   }, []);
 
   return (
-    <div className="flex-1 overflow-y-auto flex flex-col gap-3  px-5 hide-scrollbar ">
+    <div className="flex-1 overflow-y-auto pt-10 flex flex-col gap-3  px-5 hide-scrollbar ">
       {messages?.map((message) => (
         <ChatBubble
+          isGroup={!!selectedChatId}
           key={message._id}
           message={message}
           userId={user?.id || ''}

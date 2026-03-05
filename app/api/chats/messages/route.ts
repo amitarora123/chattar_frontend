@@ -80,8 +80,8 @@ export const GET = async (request: Request) => {
           username: msg.sender_id?.username,
           avatar_url: msg.sender_id?.avatar_url,
         },
-        isContact: contactMap.has(msg.sender_id.toString()),
-        contactName: contactMap.get(msg.sender_id.toString()),
+        isContact: contactMap.has(msg.sender_id._id.toString()),
+        contactName: contactMap.get(msg.sender_id._id.toString()),
       },
     }));
 

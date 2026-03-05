@@ -104,8 +104,25 @@ export const GET = async (request: Request) => {
     );
     const response = chatParticipants.map((cp) => {
       const chat = cp.chat_id as IChat;
-      const lastMessage = lastMessageMap.get(chat._id.toString()) || null;
+      let lastMessage = lastMessageMap.get(chat._id.toString()) || null;
 
+      if (lastMessage?.sender) {
+        const senderId = lastMessage.sender._id.toString();
+
+        lastMessage = {
+          ...lastMessage,
+          sender: {
+            user: {
+              _id: senderId,
+              username: lastMessage.sender.username,
+              avatar_url: lastMessage.sender.avatar_url ?? null,
+            },
+            groupRole: null, // Not relevant for message context
+            isContact: contactMap.has(senderId),
+            contactName: contactMap.get(senderId) ?? null,
+          },
+        };
+      }
       // Get participants for this chat
       const participantsForChat = allParticipants.filter(
         (p) => p.chat_id.toString() === chat._id.toString(),

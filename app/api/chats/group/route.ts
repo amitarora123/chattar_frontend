@@ -1,5 +1,10 @@
 import { authMiddleware } from '@/lib/authMiddleware';
-import { Chat, ChatParticipants } from '@/models/Chat';
+import {
+  Chat,
+  ChatParticipants,
+  IChatParticipants,
+  IGroupRole,
+} from '@/models/Chat';
 import { connectDB } from '@/utils/db';
 
 export const POST = async (request: Request) => {
@@ -42,9 +47,9 @@ export const POST = async (request: Request) => {
     // creator should always be admin
     participantsToInsert.push({
       chat_id: group._id,
-      user_id: authUser._id,
-      role: {
-        assigned_by: authUser._id,
+      user_id: authUser._id!,
+      groupRole: {
+        assigned_by: authUser._id!,
         name: 'Admin',
       },
     });
@@ -55,7 +60,7 @@ export const POST = async (request: Request) => {
         participantsToInsert.push({
           chat_id: group._id,
           user_id: id,
-          role: {
+          groupRole: {
             assigned_by: authUser._id,
             name: 'Admin',
           },
@@ -69,7 +74,7 @@ export const POST = async (request: Request) => {
         participantsToInsert.push({
           chat_id: group._id,
           user_id: id,
-          role: {
+          groupRole: {
             name: 'Member',
             assigned_by: authUser._id,
           },
@@ -89,8 +94,11 @@ export const POST = async (request: Request) => {
   } catch (error) {
     console.log('Error creating group', error);
     const { message } = error as { message: string };
-    return Response.json({
-      message: message || 'Internal Server Error',
-    });
+    return Response.json(
+      {
+        message: message || 'Internal Server Error',
+      },
+      { status: 500 },
+    );
   }
 };

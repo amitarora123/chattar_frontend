@@ -18,7 +18,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
 const NewChat = () => {
   const { data: session } = useSession();
   const { changeSidebar } = useSidebarStore();
-  const { setSelectedRecipientId } = useChatStore();
+  const { setSelectedChatId, setSelectedRecipientId } = useChatStore();
 
   const { token } = session || {};
 
@@ -104,7 +104,10 @@ const NewChat = () => {
       <ul>
         {contacts?.map((contact) => (
           <li
-            onClick={() => setSelectedRecipientId(contact.user._id)}
+            onClick={() => {
+              setSelectedChatId(null);
+              setSelectedRecipientId(contact.user._id);
+            }}
             key={contact._id}
             className="p-3 hover:bg-neutral-800 cursor-pointer rounded-lg mt-2 flex gap-4 transition-colors"
           >

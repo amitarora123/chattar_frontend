@@ -12,6 +12,7 @@ import { Input } from '../../ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
 import { getMyChats } from '@/lib/actions/chat';
 import { getMessageDateTimeStamp } from '@/lib/utils';
+import MobileBottomNav from '@/components/ui/mobile-bottom-navbar';
 
 const AllChats = () => {
   const { changeSidebar } = useSidebarStore();
@@ -88,7 +89,7 @@ const AllChats = () => {
       </div>
 
       {/* Chat List */}
-      <ul>
+      <ul className="overflow-y-auto  hide-scrollbar max-lg:h-107  pb-5">
         {chats?.map((chat) => {
           console.log(chat);
           const avatar = chat.is_group
@@ -103,8 +104,10 @@ const AllChats = () => {
               key={chat._id}
               onClick={() => {
                 if (chat.is_group) {
+                  setSelectedRecipientId(null);
                   setSelectedChatId(chat._id);
                 } else {
+                  setSelectedChatId(null);
                   setSelectedRecipientId(
                     chat.participants ? chat.participants[0].user._id : null,
                   );
@@ -151,11 +154,11 @@ const AllChats = () => {
                 {chat.last_message && (
                   <p className="truncate text-sm text-neutral-400 mt-1">
                     {chat.is_group &&
-                      (chat.last_message.sender?.user._id === session?.user.id
+                      (chat.last_message?.sender?.user._id === session?.user.id
                         ? 'me: '
-                        : chat.last_message.sender?.contactName ||
-                          chat.last_message.sender.user.username + ' :')}
-                    {chat.last_message.content}
+                        : (chat.last_message?.sender?.contactName ||
+                            chat.last_message?.sender.user.username) + ': ')}
+                    {chat.last_message?.content}
                   </p>
                 )}
               </div>
@@ -163,6 +166,7 @@ const AllChats = () => {
           );
         })}
       </ul>
+      <MobileBottomNav />
     </>
   );
 };

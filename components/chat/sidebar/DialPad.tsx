@@ -9,7 +9,7 @@ import { useChatStore } from '@/lib/store/chatStore';
 
 const DialPad = () => {
   const { changeSidebar } = useSidebarStore();
-  const { setSelectedRecipientId } = useChatStore();
+  const { setSelectedChatId, setSelectedRecipientId } = useChatStore();
 
   const [username, setUsername] = useState('');
 
@@ -62,6 +62,7 @@ const DialPad = () => {
             <li
               key={user.user._id}
               onClick={() => {
+                setSelectedChatId(null);
                 setSelectedRecipientId(user.user._id);
               }}
               className="p-3 hover:bg-neutral-800 cursor-pointer rounded-lg mt-2 flex gap-4 transition-colors"

@@ -19,7 +19,7 @@ const AddGroupMembers = () => {
   });
 
   const filteredContacts = contacts?.filter(
-    (c) => !userIds.includes(c.user._id),
+    (c) => !(userIds.includes(c.user._id) || c.user._id === session?.user.id),
   );
 
   return (
@@ -31,8 +31,8 @@ const AddGroupMembers = () => {
           <button
             className="rounded-full p-2 transition-colors cursor-pointer duration-200 hover:bg-neutral-800"
             onClick={() => {
-              setUserIds([])
-              changeSidebar('NewChat')
+              setUserIds([]);
+              changeSidebar('NewChat');
             }}
           >
             <ArrowLeft size={20} />

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useGroupStore } from '@/lib/store/groupStore';
 import { useSidebarStore } from '@/lib/store/sidebarStore';
 import { createGroup } from '@/lib/actions/chat';
@@ -22,6 +22,8 @@ const NewGroup = () => {
   const [description, setDescription] = useState('');
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
+  const queryClient = useQueryClient();
+
   const { mutate, isPending } = useMutation({
     mutationFn: async () =>
       createGroup(token!, {
@@ -33,6 +35,9 @@ const NewGroup = () => {
       }),
     onSuccess: (data) => {
       toast.success(data.message || 'Group Created Successfully');
+      queryClient.invalidateQueries({
+        queryKey: ['chats'],
+      });
       changeSidebar('AllChats'); // go back to chats
     },
     onError: (error) => {

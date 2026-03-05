@@ -17,14 +17,14 @@ export interface IChat extends Document, Timestamps {
 export interface IGroupRole {
   assigned_by: Types.ObjectId;
   name: 'Admin' | 'Member';
-  assigned_at: Date;
+  assigned_at?: Date;
 }
 
 export interface IChatParticipants extends Document {
   chat_id: Types.ObjectId;
   user_id: Types.ObjectId;
-  is_muted: boolean;
-  joined_at: Date;
+  is_muted?: boolean;
+  joined_at?: Date;
   left_at?: Date;
   cleared_at?: Date;
   groupRole?: IGroupRole;
