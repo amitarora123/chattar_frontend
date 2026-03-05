@@ -4,16 +4,20 @@ import { Button } from '../ui/button';
 import { sendMessage } from '@/lib/actions/message';
 import { SendMessageProps } from '@/types/message.types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { useChatStore } from '@/lib/store/chatStore';
 import { Session } from 'next-auth';
+import { socket } from '@/lib/socket/socketClient';
+import { getChatKey } from '@/lib/service/chat';
 
 const ChatInput = ({ session }: { session: Session | null }) => {
   const { token } = session || {};
 
   const { selectedChatId, selectedRecipientId } = useChatStore();
   const [value, setValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -22,10 +26,6 @@ const ChatInput = ({ session }: { session: Session | null }) => {
       sendMessage(token, data),
 
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['chat-messages'],
-      });
-
       queryClient.invalidateQueries({
         queryKey: ['chats'],
       });
@@ -67,7 +67,36 @@ const ChatInput = ({ session }: { session: Session | null }) => {
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleSendMessage();
         }}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => {
+          const text = e.target.value;
+          setValue(text);
+
+          if (!session?.user?.id) return;
+
+          const room = selectedChatId
+            ? `chat:${selectedChatId}`
+            : `chat:${getChatKey(session.user.id, selectedRecipientId!)}`;
+
+          if (!isTyping) {
+            socket.emit('typing:start', {
+              room,
+              userId: session.user.id,
+            });
+
+            setIsTyping(true);
+          }
+
+          clearTimeout(typingTimeout.current ?? undefined);
+
+          typingTimeout.current = setTimeout(() => {
+            socket.emit('typing:stop', {
+              room,
+              userId: session.user.id,
+            });
+
+            setIsTyping(false);
+          }, 2000);
+        }}
       />
       {value.length > 0 ? (
         <div className="absolute right-1 top-0  items-center h-full flex ">

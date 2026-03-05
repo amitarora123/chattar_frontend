@@ -4,6 +4,7 @@ import { Message } from '@/models/Message';
 import { connectDB } from '@/utils/db';
 import { getChatKey } from '@/lib/service/chat';
 import { isValidObjectId } from 'mongoose';
+import { getIO } from '@/lib/socket/socketServer';
 
 export const POST = async (request: Request) => {
   try {
@@ -124,6 +125,34 @@ export const POST = async (request: Request) => {
       reply_to_id: isValidObjectId(reply_to) ? reply_to : undefined,
       attachment: attachment,
     });
+
+    await message.populate('sender_id', 'username avatar_url');
+    const io = getIO();
+
+    const formattedMessage = {
+      _id: message._id.toString(),
+      content: message.content,
+      chat_id: message.chat_id.toString(),
+      createdAt: message.createdAt,
+      updatedAt: message.updatedAt,
+      is_edited: message.is_edited,
+      is_deleted: message.is_deleted,
+      sender: {
+        user: {
+          _id: message.sender_id?._id?.toString(),
+          username: message.sender_id?.username,
+          avatar_url: message.sender_id?.avatar_url,
+        },
+        isContact: false, // you can compute this later
+        contactName: null,
+      },
+    };
+    if (chat.is_group) {
+      io.to(`chat:${chat._id}`).emit('message:new', formattedMessage);
+    } else {
+      const chatKey = chat.chat_key;
+      io.to(`chat:${chatKey}`).emit('message:new', formattedMessage);
+    }
 
     return Response.json(
       {

@@ -6,6 +6,9 @@ import { Session } from 'next-auth';
 import Image from 'next/image';
 import { Separator } from '../ui/separator';
 import { Button } from '../ui/button';
+import { useEffect } from 'react';
+import { socket } from '@/lib/socket/socketClient';
+import { getChatKey } from '@/lib/service/chat';
 
 const ChatHeader = ({ session }: { session: Session | null }) => {
   const {
@@ -30,6 +33,10 @@ const ChatHeader = ({ session }: { session: Session | null }) => {
     enabled: !!token && !!selectedRecipientId,
   });
 
+  const joinRoom = (room: string) => {
+    socket.emit('chat:join', room);
+  };
+
   const avatar_url =
     recipient?.user.avatar_url || chat?.groupMetaData?.avatar_url || '';
   const displayName =
@@ -37,6 +44,33 @@ const ChatHeader = ({ session }: { session: Session | null }) => {
     recipient?.user.username ||
     chat?.groupMetaData?.name ||
     '';
+
+  useEffect(() => {
+    const handleJoinRoom = () => {
+      if (!selectedChatId && !selectedRecipientId) return;
+
+      if (selectedRecipientId && session?.user.id) {
+        const chatKey = getChatKey(session.user.id, selectedRecipientId);
+        const room = `chat:${chatKey}`;
+        joinRoom(room);
+      }
+
+      if (selectedChatId) {
+        const room = `chat:${selectedChatId}`;
+        joinRoom(room);
+      }
+    };
+
+    if (socket.connected) {
+      handleJoinRoom();
+    }
+
+    socket.on('connect', handleJoinRoom);
+
+    return () => {
+      socket.off('connect', handleJoinRoom);
+    };
+  }, [selectedChatId, selectedRecipientId, session]);
 
   if (!recipient && !chat) {
     return null;

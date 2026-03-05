@@ -1,7 +1,7 @@
 import { getMessageDateTimeStamp } from '@/lib/utils';
 import { Message } from '@/types/message.types';
 import clsx from 'clsx';
-import { User, User2 } from 'lucide-react';
+import { User } from 'lucide-react';
 import Image from 'next/image';
 
 interface ChatBubbleProps {
@@ -17,7 +17,6 @@ const ChatBubble = ({
 }: ChatBubbleProps) => {
   const isMyMessage = sender.user._id === userId;
 
-  console.log(sender);
   return (
     <div
       className={clsx(

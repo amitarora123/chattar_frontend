@@ -9,10 +9,7 @@ const ChatsPage = () => {
   const { selectedChatId, selectedRecipientId } = useChatStore();
 
   const isChatOpen = !!selectedChatId || !!selectedRecipientId;
-  console.log({
-    selectedChatId,
-    selectedRecipientId,
-  });
+
   return (
     <main className="h-full grid lg:grid-cols-4 grid-cols-1 overflow-hidden flex-1">
       {/* Sidebar */}
@@ -26,7 +23,7 @@ const ChatsPage = () => {
 
         <Sidebar
           type="NewChat"
-          className={`absolute z-50 inset-0 transition-transform duration-300 ${
+          className={`absolute z-50 flex flex-col  inset-0 transition-transform duration-300 ${
             sidebar === 'NewChat' ? 'translate-x-0' : '-translate-x-full'
           }`}
         />

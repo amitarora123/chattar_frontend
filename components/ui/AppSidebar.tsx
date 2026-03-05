@@ -1,3 +1,4 @@
+'use client';
 import ProfileDropdown from '../user-profile/ProfileDropdown';
 
 const AppSidebar = () => {

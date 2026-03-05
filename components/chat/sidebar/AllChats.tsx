@@ -4,7 +4,7 @@ import { BatteryPlus, Search, User } from 'lucide-react';
 import { useSidebarStore } from '@/lib/store/sidebarStore';
 import clsx from 'clsx';
 import { useChatStore } from '@/lib/store/chatStore';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 
 import { Button } from '../../ui/button';
@@ -13,11 +13,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
 import { getMyChats } from '@/lib/actions/chat';
 import { getMessageDateTimeStamp } from '@/lib/utils';
 import MobileBottomNav from '@/components/ui/mobile-bottom-navbar';
+import { socket } from '@/lib/socket/socketClient';
 
 const AllChats = () => {
   const { changeSidebar } = useSidebarStore();
   const { setSelectedRecipientId, setSelectedChatId } = useChatStore();
-
+  const [onilneUserIds, setOnlineUserIds] = useState<string[]>([]);
   const { data: session } = useSession();
   const { token } = session || {};
 
@@ -29,6 +30,26 @@ const AllChats = () => {
 
   const [activeTabs, setActiveTabs] = useState<'All' | 'Unread'>('All');
 
+  useEffect(() => {
+    socket.on('presence:initial', (users) => {
+      setOnlineUserIds(users);
+    });
+
+    socket.on('user:online', (userId) => {
+      console.log(userId, 'came online');
+      setOnlineUserIds((prev) => [...prev, userId]);
+    });
+
+    socket.on('user:offline', (userId) => {
+      setOnlineUserIds(prev => prev.filter(id => id != userId))
+    });
+
+    return () => {
+      socket.off('presence:initial');
+      socket.off('user:online');
+      socket.off('user:offline');
+    };
+  }, []);
   return (
     <>
       {/* Logo */}
@@ -91,7 +112,6 @@ const AllChats = () => {
       {/* Chat List */}
       <ul className="overflow-y-auto  hide-scrollbar max-lg:h-107  pb-5">
         {chats?.map((chat) => {
-          console.log(chat);
           const avatar = chat.is_group
             ? chat.groupMetaData?.avatar_url
             : chat.participants![0].user.avatar_url;
@@ -140,7 +160,14 @@ const AllChats = () => {
                     {chat.groupMetaData
                       ? chat.groupMetaData.name
                       : chat.participants![0].contactName ||
-                        chat.participants![0].user.username}
+                        chat.participants![0].user.username}{' '}
+                    {!chat.is_group && (
+                      <p>
+                        {onilneUserIds.includes(chat.participants![0].user._id)
+                          ? '(online)'
+                          : '(offline)'}
+                      </p>
+                    )}
                   </span>
 
                   {chat.last_message?.createdAt && (
