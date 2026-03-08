@@ -1,5 +1,4 @@
 import { v2 as cloudinary } from 'cloudinary';
-import { Request } from 'next/server';
 import { authMiddleware } from '@/lib/authMiddleware';
 
 cloudinary.config({

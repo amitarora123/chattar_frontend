@@ -1,6 +1,5 @@
 import { authMiddleware } from '@/lib/authMiddleware';
 import { Contacts } from '@/models/Contact';
-import { Request } from 'next/server';
 
 export const GET = async (
   request: Request,
