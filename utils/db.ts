@@ -1,8 +1,8 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 export const connectDB = async () => {
-    const mongodbUri = process.env.MONGODB_URI || "";
-    await mongoose.connect(mongodbUri, {
-        dbName: "chatter"
-    })
-}
+  const mongodbUri = process.env.MONGODB_URI || "";
+  await mongoose.connect(mongodbUri, {
+    dbName: 'chatter',
+  });
+};
