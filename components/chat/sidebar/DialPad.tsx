@@ -22,7 +22,7 @@ const DialPad = () => {
   });
 
   return (
-    <>
+    <div className="p-3">
       <div className="flex w-full justify-between items-center">
         <div className="flex gap-3 items-center">
           <button
@@ -95,7 +95,7 @@ const DialPad = () => {
           );
         })}
       </ul>
-    </>
+    </div>
   );
 };
 

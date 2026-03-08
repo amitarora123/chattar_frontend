@@ -84,7 +84,7 @@ const NewContact = () => {
   /* ---------------- UI ---------------- */
 
   return (
-    <div className="  min-h-screen">
+    <div className="p-3  flex-1">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button

@@ -25,7 +25,7 @@ export const GET = async (request: Request) => {
       authUser._id!.toString(),
     );
 
-    // 1 Get chats where user is participant
+    // 1️⃣ Get chats where user is participant
     const chatParticipants = await ChatParticipants.find({
       user_id: authUser._id,
       left_at: null,
@@ -39,14 +39,22 @@ export const GET = async (request: Request) => {
       return Response.json([], { status: 200 });
     }
 
-    // 2 Get all other participants for 1-1 chats
+    // Build cleared_at map
+    const clearedAtMap = new Map(
+      chatParticipants.map((cp) => [
+        cp.chat_id._id.toString(),
+        cp.cleared_at ?? null,
+      ]),
+    );
+
+    // 2️⃣ Get all participants
     const allParticipants = await ChatParticipants.find({
       chat_id: { $in: chatIds },
     })
       .populate('user_id')
       .lean();
 
-    // 3 Get user contacts
+    // 3️⃣ Contacts
     const contacts = await Contacts.find({
       owner_id: authUser._id,
     }).lean();
@@ -55,11 +63,12 @@ export const GET = async (request: Request) => {
       contacts.map((c) => [c.user_id.toString(), c.name]),
     );
 
-    // 4 Fetch latest message per chat (single aggregation)
+    // 4️⃣ Fetch latest message per chat
     const lastMessages = await Message.aggregate([
       {
         $match: {
           chat_id: { $in: chatIds },
+          is_deleted: false,
         },
       },
       {
@@ -102,9 +111,21 @@ export const GET = async (request: Request) => {
     const lastMessageMap = new Map(
       lastMessages.map((m) => [m._id.toString(), m.lastMessage]),
     );
+
     const response = chatParticipants.map((cp) => {
       const chat = cp.chat_id as IChat;
       let lastMessage = lastMessageMap.get(chat._id.toString()) || null;
+
+      // 🚨 cleared_at filter
+      const clearedAt = clearedAtMap.get(chat._id.toString());
+
+      if (
+        lastMessage &&
+        clearedAt &&
+        new Date(lastMessage.createdAt) <= new Date(clearedAt)
+      ) {
+        lastMessage = null;
+      }
 
       if (lastMessage?.sender) {
         const senderId = lastMessage.sender._id.toString();
@@ -117,25 +138,23 @@ export const GET = async (request: Request) => {
               username: lastMessage.sender.username,
               avatar_url: lastMessage.sender.avatar_url ?? null,
             },
-            groupRole: null, // Not relevant for message context
+            groupRole: null,
             isContact: contactMap.has(senderId),
             contactName: contactMap.get(senderId) ?? null,
           },
         };
       }
-      // Get participants for this chat
+
+      // Participants
       const participantsForChat = allParticipants.filter(
         (p) => p.chat_id.toString() === chat._id.toString(),
       );
 
       const formattedParticipants = participantsForChat
         .filter((p) => {
-          // If NOT group → exclude auth user
-          if (!chat.is_group && chat.chat_key != selfChatKey) {
+          if (!chat.is_group && chat.chat_key !== selfChatKey) {
             return p.user_id._id.toString() !== authUser._id!.toString();
           }
-
-          // If group → include everyone
           return true;
         })
         .map((p) => {
@@ -163,10 +182,12 @@ export const GET = async (request: Request) => {
         updatedAt: chat.updatedAt,
       };
     });
+
     return Response.json(response, { status: 200 });
   } catch (error) {
     console.log('User Chats Fetching Error:', error);
     const { message } = error as { message: string };
+
     return Response.json(
       { message: message || 'Internal Server Error' },
       { status: 500 },

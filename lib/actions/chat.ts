@@ -16,9 +16,8 @@ export const getChatMessages = async (
   chat_id?: string | null,
   recipient_id?: string | null,
 ): Promise<Message[]> => {
-  const res = await apiClient.get(`/api/chats/messages`, {
+  const res = await apiClient.get(`/api/chats/${chat_id}/messages`, {
     params: {
-      chat_id,
       recipient_id,
     },
     headers: {
@@ -65,6 +64,26 @@ export const createGroup = async (
   },
 ) => {
   const res = await apiClient.post('/api/chats/group', data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data;
+};
+
+export const clearChat = async ({
+  token,
+  chat_id,
+  recipient_id,
+}: {
+  token: string;
+  chat_id?: string | null;
+  recipient_id?: string | null;
+}) => {
+  const res = await apiClient.delete(`/api/chats/${chat_id}/clear`, {
+    params: {
+      recipient_id,
+    },
     headers: {
       Authorization: `Bearer ${token}`,
     },

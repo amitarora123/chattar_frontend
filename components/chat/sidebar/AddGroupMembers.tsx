@@ -23,7 +23,7 @@ const AddGroupMembers = () => {
   );
 
   return (
-    <>
+    <div className="p-3">
       {' '}
       {/* Logo */}
       <div className="flex w-full relative justify-between items-center">
@@ -143,7 +143,7 @@ const AddGroupMembers = () => {
           <ArrowRight size={25} />
         </button>
       </div>
-    </>
+    </div>
   );
 };
 

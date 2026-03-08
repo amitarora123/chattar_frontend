@@ -27,7 +27,7 @@ const Sidebar = ({ className, type }: SidebarProps) => {
   return (
     <section
       className={clsx(
-        'border-r transition-transform bg-background duration-300 ease-in-out pt-3 px-3 lg:col-span-1 max-lg:h-screen',
+        'border-r flex flex-col transition-transform bg-background duration-300 ease-in-out  lg:col-span-1 min-h-0 h-screen',
         className,
       )}
     >

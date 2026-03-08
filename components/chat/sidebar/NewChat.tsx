@@ -29,7 +29,7 @@ const NewChat = () => {
   });
 
   return (
-    <>
+    <div className="p-3">
       {/* Logo */}
       <div className="flex w-full justify-between items-center">
         <div className="flex gap-3 items-center">
@@ -140,7 +140,7 @@ const NewChat = () => {
           </li>
         ))}
       </ul>
-    </>
+    </div>
   );
 };
 
