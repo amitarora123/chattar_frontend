@@ -29,8 +29,6 @@ const ChatInput = ({ session }: { session: Session | null }) => {
       queryClient.invalidateQueries({
         queryKey: ['chats'],
       });
-
-      setValue('');
     },
   });
 
@@ -51,6 +49,7 @@ const ChatInput = ({ session }: { session: Session | null }) => {
           recipient_id: selectedRecipientId ? selectedRecipientId : undefined,
         },
       });
+      setValue('');
     }
   };
 

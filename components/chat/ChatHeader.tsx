@@ -5,7 +5,7 @@ import {
 } from '@/lib/actions/chat';
 import { useChatStore } from '@/lib/store/chatStore';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Trash, User, X } from 'lucide-react';
+import {  User, X } from 'lucide-react';
 import { Session } from 'next-auth';
 import Image from 'next/image';
 import { Separator } from '../ui/separator';
@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 import { socket } from '@/lib/socket/socketClient';
 import { getChatKey } from '@/lib/service/chat';
 import { toast } from 'sonner';
+import ChatClear from './ChatClear';
 
 const ChatHeader = ({ session }: { session: Session | null }) => {
   const {
@@ -135,10 +136,7 @@ const ChatHeader = ({ session }: { session: Session | null }) => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Button onClick={handleClearChat} variant="destructive">
-              <span className="hidden sm:inline">Clear</span>{' '}
-              <Trash className="size-4 sm:hidden" />
-            </Button>
+            <ChatClear onConfirm={handleClearChat} />
             <Button
               onClick={() => {
                 setSelectedChatId(null);

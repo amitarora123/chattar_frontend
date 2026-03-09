@@ -40,7 +40,7 @@ export const POST = async (request: Request) => {
 
       sendResetPasswordEmail(
         user.email,
-        `${process.env.NEXT_PUBLIC_BASEURI || 'http://localhost:3000'}/auth/reset-password?token=${token}`,
+        `${process.env.NEXT_PUBLIC_BASEURI}/auth/reset-password?token=${token}`,
       );
     }
 
