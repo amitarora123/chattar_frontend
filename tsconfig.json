@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "types/timestamps.types.ts"  ],
   "exclude": ["node_modules"]
 }
