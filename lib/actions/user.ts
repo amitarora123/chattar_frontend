@@ -4,34 +4,34 @@ import { User } from '@/types/user.types';
 import { ChatParticipant } from '@/types/chat.types';
 
 export const signUp = async (data: SignUpProps) => {
-  const res = await apiClient.post('/api/user/', data);
+  const res = await apiClient.post('/user/', data);
   return res.data;
 };
 
 export const getUserDetails = async (user_id: string): Promise<User> => {
-  const res = await apiClient.get(`/api/user/${user_id}`);
+  const res = await apiClient.get(`/user/${user_id}`);
   return res.data;
 };
 
 export const checkUsernameUniqueness = async (username: string) => {
-  const res = await apiClient.get(`/api/user/unique/${username}`);
+  const res = await apiClient.get(`/user/unique/${username}`);
   return res.data;
 };
 
 export const resendVerificationOtp = async (user_id: string) => {
-  const res = await apiClient.post(`/api/user/resend-otp/${user_id}`);
+  const res = await apiClient.post(`/user/resend-otp/${user_id}`);
   return res.data;
 };
 
 export const verifyUser = async (user_id: string, otp: string) => {
-  const res = await apiClient.post(`/api/user/verify/${user_id}`, {
+  const res = await apiClient.post(`/user/verify/${user_id}`, {
     otp,
   });
   return res.data;
 };
 
 export const forgotPassword = async (email: string) => {
-  const res = await apiClient.post(`/api/user/forgot-password`, {
+  const res = await apiClient.post(`/user/forgot-password`, {
     email,
   });
   return res.data;
@@ -44,7 +44,7 @@ export const resetPassword = async ({
   newPassword: string;
   token: string;
 }) => {
-  const res = await apiClient.post(`/api/user/reset-password`, {
+  const res = await apiClient.post(`/user/reset-password`, {
     newPassword,
     token,
   });
@@ -52,7 +52,7 @@ export const resetPassword = async ({
 };
 
 export const googleLogin = async (id_token: string) => {
-  const res = await apiClient.post('/api/user/google-login', {
+  const res = await apiClient.post('/user/google-login', {
     id_token,
   });
 
@@ -66,7 +66,7 @@ export const searchUsers = async ({
   username?: string;
   email?: string;
 }): Promise<ChatParticipant[]> => {
-  const res = await apiClient.get('/api/user/search', {
+  const res = await apiClient.get('/user/search', {
     params: {
       ...(username && { username }),
       ...(email && { email }),

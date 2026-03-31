@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { useChatStore } from '@/lib/store/chatStore';
 import { Session } from 'next-auth';
 import { socket } from '@/lib/socket/socketClient';
-import { getChatKey } from '@/lib/service/chat';
+import { getChatKey } from '@/lib/utils';
 
 const ChatInput = ({ session }: { session: Session | null }) => {
   const { token } = session || {};

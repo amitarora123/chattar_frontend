@@ -12,7 +12,7 @@ import { Separator } from '../ui/separator';
 import { Button } from '../ui/button';
 import { useEffect } from 'react';
 import { socket } from '@/lib/socket/socketClient';
-import { getChatKey } from '@/lib/service/chat';
+import { getChatKey } from '@/lib/utils';
 import { toast } from 'sonner';
 import ChatClear from './ChatClear';
 

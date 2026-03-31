@@ -1,9 +1,9 @@
 import NextAuth, { CredentialsSignin } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { apiClient } from './lib/apiClient/apiClient';
 import { AxiosError } from 'axios';
 import Google from 'next-auth/providers/google';
 import { googleLogin } from './lib/actions/user';
+import { authConfig } from './auth.config';
 
 class InvalidLoginError extends CredentialsSignin {
   constructor(code: string) {
@@ -13,9 +13,7 @@ class InvalidLoginError extends CredentialsSignin {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  session: {
-    strategy: 'jwt',
-  },
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
@@ -27,6 +25,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
         try {
+          const { apiClient } = await import('./lib/apiClient/apiClient');
           const response = await apiClient.post('/api/user/login', credentials);
           const user = {
             ...response.data,
@@ -55,14 +54,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
+    ...authConfig.callbacks,
     async signIn({ user, account }) {
       if (account?.provider === 'google') {
         if (!account.id_token) return false;
 
+        console.log(account.id_token)
         try {
           const data = await googleLogin(account.id_token);
-
-          // Attach backend data to user object
+          
           user.id = data._id;
           user.username = data.username;
           user.email = data.email;
@@ -79,38 +79,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       return true;
     },
-
-    async jwt({ token, user, trigger, session }) {
-      if (user) {
-        token.username = user.username;
-        token.token = user.token;
-        token.email = user.email;
-        token.id = user.id;
-        token.isVerified = user.isVerified;
-        token.avatar_url = user.avatar_url;
-      }
-
-      if (trigger === 'update' && session) {
-        token.isVerified = session.isVerified ?? token.isVerified;
-      }
-
-      return token;
-    },
-
-    async session({ session, token }) {
-      session.user.id = token.id;
-      session.user.email = token.email;
-      session.user.username = token.username;
-      session.user.isVerified = token.isVerified;
-      session.user.avatar_url = token.avatar_url;
-      session.token = token.token as string;
-
-      return session;
-    },
-  },
-  pages: {
-    newUser: '/auth/sign-up',
-    signIn: '/auth/sign-in',
-    signOut: '/',
   },
 });

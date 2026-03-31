@@ -1,5 +1,8 @@
-import { auth } from '@/auth';
+import NextAuth from 'next-auth';
+import { authConfig } from './auth.config';
 import { NextResponse } from 'next/server';
+
+const { auth } = NextAuth(authConfig);
 
 const protectedRoutes = ['/chats', '/profile'];
 const authRoutes = '/auth';
@@ -8,6 +11,7 @@ export default auth((req) => {
   const pathname = req.nextUrl.pathname;
 
   const user = req.auth?.user;
+  console.log(user)
 
   if (user && !user?.isVerified) {
     if (!pathname.startsWith(`/auth/verify`)) {
@@ -29,6 +33,7 @@ export default auth((req) => {
     if (isProtectedRoute) {
       return NextResponse.redirect(new URL('/auth/sign-in', req.url));
     }
+    console.log(isProtectedRoute)
   }
 
   return NextResponse.next();
