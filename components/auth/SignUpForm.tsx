@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -9,26 +9,26 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../ui/card';
-import { useForm, useWatch } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import CustomFormField from '../form/CustomFormField';
-import { Button } from '../ui/button';
-import Link from 'next/link';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { SignUpProps } from '@/types/auth.types';
-import { checkUsernameUniqueness, signUp } from '@/lib/actions/user';
-import { AxiosError } from 'axios';
-import { Check, Loader2, X } from 'lucide-react';
-import useDebounce from '@/hooks/useDebounce';
-import GoogleLoginButton from '../ui/GoogleLogin';
+} from "../ui/card";
+import { useForm, useWatch } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import CustomFormField from "../form/CustomFormField";
+import { Button } from "../ui/button";
+import Link from "next/link";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { SignUpProps } from "@/types/auth.types";
+import { checkUsernameUniqueness, signUp } from "@/lib/actions/user";
+import { AxiosError } from "axios";
+import { Check, Loader2, X } from "lucide-react";
+import useDebounce from "@/hooks/useDebounce";
+import GoogleLoginButton from "../ui/GoogleLogin";
 
 const signUpSchema = z
   .object({
-    username: z.string().min(4, 'Username must be at least 4 characters'),
-    email: z.string().email('Invalid email address'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
+    username: z.string().min(4, "Username must be at least 4 characters"),
+    email: z.string().email("Invalid email address"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
   })
   .superRefine((data, ctx) => {
@@ -37,9 +37,9 @@ const signUpSchema = z
     // 1. Uppercase check
     if (!/[A-Z]/.test(password)) {
       ctx.addIssue({
-        code: 'custom',
-        message: 'Password must contain at least one uppercase letter',
-        path: ['password'],
+        code: "custom",
+        message: "Password must contain at least one uppercase letter",
+        path: ["password"],
       });
       return; // stop further checks
     }
@@ -47,9 +47,9 @@ const signUpSchema = z
     // 2. Lowercase check
     if (!/[a-z]/.test(password)) {
       ctx.addIssue({
-        code: 'custom',
-        message: 'Password must contain at least one lowercase letter',
-        path: ['password'],
+        code: "custom",
+        message: "Password must contain at least one lowercase letter",
+        path: ["password"],
       });
       return;
     }
@@ -57,9 +57,9 @@ const signUpSchema = z
     // 3. Number check
     if (!/\d/.test(password)) {
       ctx.addIssue({
-        code: 'custom',
-        message: 'Password must contain at least one number',
-        path: ['password'],
+        code: "custom",
+        message: "Password must contain at least one number",
+        path: ["password"],
       });
       return;
     }
@@ -67,9 +67,9 @@ const signUpSchema = z
     // 4. Special character check
     if (!/[@$!%*?&^#()[\]{}\-_=+|;:,.<>/?]/.test(password)) {
       ctx.addIssue({
-        code: 'custom',
-        message: 'Password must contain at least one special character',
-        path: ['password'],
+        code: "custom",
+        message: "Password must contain at least one special character",
+        path: ["password"],
       });
       return;
     }
@@ -77,9 +77,9 @@ const signUpSchema = z
     // 5. Confirm password match (only if password valid)
     if (password !== confirmPassword) {
       ctx.addIssue({
-        code: 'custom',
-        message: 'Passwords do not match',
-        path: ['confirmPassword'],
+        code: "custom",
+        message: "Passwords do not match",
+        path: ["confirmPassword"],
       });
     }
   });
@@ -91,17 +91,17 @@ const SignUpForm = () => {
 
   const signUpForm = useForm<SignUpSchema>({
     defaultValues: {
-      email: '',
-      password: '',
-      username: '',
-      confirmPassword: '',
+      email: "",
+      password: "",
+      username: "",
+      confirmPassword: "",
     },
     resolver: zodResolver(signUpSchema),
   });
 
   const username = useWatch({
     control: signUpForm.control,
-    name: 'username',
+    name: "username",
   });
   const debouncedUsername = useDebounce(username, 500);
 
@@ -110,34 +110,34 @@ const SignUpForm = () => {
     isLoading: usernameLoading,
     isEnabled,
   } = useQuery({
-    queryKey: ['user', debouncedUsername],
+    queryKey: ["user", debouncedUsername],
     queryFn: async () => await checkUsernameUniqueness(debouncedUsername),
     enabled: debouncedUsername.length > 3,
     retry: false,
   });
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: SignUpProps) => await signUp(data),
-    mutationKey: ['sign-up'],
+    mutationKey: ["sign-up"],
     onSuccess: (data) => {
-      toast.success('Sign Up Successful\nPlease verify to continue');
+      toast.success("Sign Up Successful\nPlease verify to continue");
       router.replace(`/auth/verify/${data._id}`);
     },
     onError: (error) => {
       const axiosError = error as AxiosError;
       const { message } = axiosError?.response?.data as { message: string };
-      toast.error(message || 'Internal Server Error');
+      toast.error(message || "Internal Server Error");
     },
   });
 
   const handleSignUp = async (data: SignUpSchema) => {
     if (data.password != data.confirmPassword) {
-      toast.info('confirm password must match');
+      toast.info("confirm password must match");
     }
     mutate(data);
   };
 
   return (
-    <Card className=" rounded-sm  text-white min-w-80 sm:min-w-90">
+    <Card className=" rounded-sm  min-w-90 w-full sm:w-fit max-w-xl sm:h-fit h-full   text-white ">
       <CardHeader>
         <CardTitle className="text-xl font-bold">Sign Up</CardTitle>
         <CardDescription>Get Started with Chattar</CardDescription>
@@ -203,13 +203,13 @@ const SignUpForm = () => {
             disabled={isPending}
             className="bg-authBtn text-white cursor-pointer hover:bg-authBtn hover:opacity-85"
           >
-            {isPending ? 'Signing up...' : 'Sign Up'}
+            {isPending ? "Signing up..." : "Sign Up"}
           </Button>
         </form>
         <CardFooter className="p-0 mt-5 flex flex-col gap-3 items-start">
           <GoogleLoginButton />
           <p className="font-bold text-sm">
-            Don&apos;t have an account?{' '}
+            Don&apos;t have an account?{" "}
             <Link
               href="/auth/sign-in"
               className="text-blue-400 hover:underline"

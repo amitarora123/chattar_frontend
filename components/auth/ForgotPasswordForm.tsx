@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { toast } from 'sonner';
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -8,16 +8,16 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../ui/card';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import CustomFormField from '../form/CustomFormField';
-import { Button } from '../ui/button';
-import Link from 'next/link';
-import { useMutation } from '@tanstack/react-query';
-import { forgotPassword } from '@/lib/actions/user';
-import { AxiosError } from 'axios';
+} from "../ui/card";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import CustomFormField from "../form/CustomFormField";
+import { Button } from "../ui/button";
+import Link from "next/link";
+import { useMutation } from "@tanstack/react-query";
+import { forgotPassword } from "@/lib/actions/user";
+import { AxiosError } from "axios";
 
 const forgotPasswordSchema = z.object({
   email: z.email(),
@@ -28,7 +28,7 @@ type ForgotPasswordSchema = z.infer<typeof forgotPasswordSchema>;
 const ForgotPasswordForm = () => {
   const forgotPasswordForm = useForm<ForgotPasswordSchema>({
     defaultValues: {
-      email: '',
+      email: "",
     },
     resolver: zodResolver(forgotPasswordSchema),
   });
@@ -37,20 +37,20 @@ const ForgotPasswordForm = () => {
     mutationFn: async ({ email }: ForgotPasswordSchema) =>
       await forgotPassword(email),
 
-    mutationKey: ['forgot-password'],
+    mutationKey: ["forgot-password"],
     onSuccess: (data) => {
-      toast.success(data.message || 'If an account exists, reset link sent');
+      toast.success(data.message || "If an account exists, reset link sent");
       forgotPasswordForm.reset();
     },
     onError: (error) => {
       const axiosError = error as AxiosError;
       const { message } = axiosError?.response?.data as { message: string };
-      toast.error(message || 'Internal Server Error');
+      toast.error(message || "Internal Server Error");
     },
   });
 
   return (
-    <Card className=" rounded-sm  text-white min-w-80 sm:min-w-90">
+    <Card className=" rounded-sm  min-w-90 w-full sm:w-fit max-w-xl sm:h-fit h-full   text-white ">
       <CardHeader>
         <CardTitle className="text-xl font-bold">Forgot Password</CardTitle>
         <CardDescription>
@@ -84,7 +84,7 @@ const ForgotPasswordForm = () => {
             }
             disabled={isPending}
           >
-            {isPending ? 'Submitting...' : 'Submit'}
+            {isPending ? "Submitting..." : "Submit"}
           </Button>
         </form>
         <CardFooter className="p-0 mt-5 flex flex-col gap-3 items-start">
