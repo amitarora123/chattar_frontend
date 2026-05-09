@@ -1,15 +1,15 @@
 import clsx from 'clsx';
-import { useSession } from 'next-auth/react';
 import ChatInput from './ChatInput';
 import ChatHeader from './ChatHeader';
 import MessageContainer from './MessageContainer';
+import { useChatStore } from '@/lib/store/chatStore';
 
 interface ChatContainerProps {
   className: string;
 }
 
 const ChatContainer = ({ className }: ChatContainerProps) => {
-  const { data: session } = useSession();
+  const { selectedChatId } = useChatStore();
 
   return (
     <section
@@ -18,11 +18,11 @@ const ChatContainer = ({ className }: ChatContainerProps) => {
         'w-full flex overflow-hidden flex-col h-screen relative',
       )}
     >
-      <ChatHeader session={session} />
-      <MessageContainer session={session} />
+      <ChatHeader />
+      <MessageContainer />
 
       <div className="h-fit py-5 px-5">
-        <ChatInput session={session} />
+        {selectedChatId && <ChatInput chatId={selectedChatId} />}
       </div>
     </section>
   );

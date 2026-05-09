@@ -15,7 +15,7 @@ const ChatBubble = ({
   isGroup,
   message: { sender, content, createdAt },
 }: ChatBubbleProps) => {
-  const isMyMessage = sender.user._id === userId;
+  const isMyMessage = sender._id === userId;
 
   return (
     <div
@@ -27,13 +27,13 @@ const ChatBubble = ({
       <div className="flex items-start gap-2">
         {isGroup && !isMyMessage ? (
           <div className="rounded-full">
-            {sender.user.avatar_url ? (
+            {sender.avatar ? (
               <Image
-                src={sender.user.avatar_url}
+                src={sender.avatar}
                 width={30}
                 height={30}
                 className="rounded-full"
-                alt={sender.user.username}
+                alt={sender.username}
               />
             ) : (
               <User />
@@ -43,9 +43,7 @@ const ChatBubble = ({
         <div className=" text-white bg-neutral-800 rounded-lg px-3 py-2">
           {!isMyMessage && (
             <p className="text-xs text-slate-400">
-              {sender.contactName
-                ? sender.contactName
-                : `~ ${sender.user.username}`}
+              {sender.name ? sender.name : `~ ${sender.username}`}
             </p>
           )}
           {content}

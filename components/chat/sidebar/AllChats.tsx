@@ -1,53 +1,52 @@
-import { useQuery } from '@tanstack/react-query';
-import Image from 'next/image';
-import { BatteryPlus, Search, User } from 'lucide-react';
-import { useSidebarStore } from '@/lib/store/sidebarStore';
-import clsx from 'clsx';
-import { useChatStore } from '@/lib/store/chatStore';
-import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
+import { BatteryPlus, Search, User } from "lucide-react";
+import { useSidebarStore } from "@/lib/store/sidebarStore";
+import clsx from "clsx";
+import { useChatStore } from "@/lib/store/chatStore";
+import { useEffect, useState } from "react";
 
-import { Button } from '../../ui/button';
-import { Input } from '../../ui/input';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
-import { getMyChats } from '@/lib/actions/chat';
-import { getMessageDateTimeStamp } from '@/lib/utils';
-import MobileBottomNav from '@/components/ui/mobile-bottom-navbar';
-import { socket } from '@/lib/socket/socketClient';
+import { Button } from "../../ui/button";
+import { Input } from "../../ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
+import { getMyChats } from "@/lib/api/chat.api";
+import { getMessageDateTimeStamp } from "@/lib/utils";
+import MobileBottomNav from "@/components/ui/mobile-bottom-navbar";
+import { socket } from "@/lib/socket/socketClient";
+import { useAuth } from "@/lib/providers/AuthProvider";
 
 const AllChats = () => {
+  const { user } = useAuth();
+  const userId = user?._id;
   const { changeSidebar } = useSidebarStore();
-  const { setSelectedRecipientId, setSelectedChatId } = useChatStore();
+  const { setSelectedChatId } = useChatStore();
   const [onilneUserIds, setOnlineUserIds] = useState<string[]>([]);
-  const { data: session } = useSession();
-  const { token } = session || {};
 
   const { data: chats } = useQuery({
-    queryKey: ['chats', session?.user.id],
-    queryFn: async () => await getMyChats(token!),
-    enabled: !!token,
+    queryKey: ["chats"],
+    queryFn: getMyChats,
   });
 
-  const [activeTabs, setActiveTabs] = useState<'All' | 'Unread'>('All');
+  const [activeTabs, setActiveTabs] = useState<"All" | "Unread">("All");
 
   useEffect(() => {
-    socket.on('presence:initial', (users) => {
+    socket.on("presence:initial", (users) => {
       setOnlineUserIds(users);
     });
 
-    socket.on('user:online', (userId) => {
-      console.log(userId, 'came online');
+    socket.on("user:online", (userId) => {
+      console.log(userId, "came online");
       setOnlineUserIds((prev) => [...prev, userId]);
     });
 
-    socket.on('user:offline', (userId) => {
+    socket.on("user:offline", (userId) => {
       setOnlineUserIds((prev) => prev.filter((id) => id != userId));
     });
 
     return () => {
-      socket.off('presence:initial');
-      socket.off('user:online');
-      socket.off('user:offline');
+      socket.off("presence:initial");
+      socket.off("user:online");
+      socket.off("user:offline");
     };
   }, []);
   return (
@@ -61,7 +60,7 @@ const AllChats = () => {
             <TooltipTrigger asChild>
               <button
                 className="rounded-full p-2 transition-colors cursor-pointer duration-200 hover:bg-neutral-800"
-                onClick={() => changeSidebar('NewChat')}
+                onClick={() => changeSidebar("NewChat")}
               >
                 <BatteryPlus />
               </button>
@@ -90,10 +89,10 @@ const AllChats = () => {
           <Button
             variant="outline"
             className={clsx(
-              'rounded-full',
-              activeTabs === 'All' && 'bg-neutral-700',
+              "rounded-full",
+              activeTabs === "All" && "bg-neutral-700",
             )}
-            onClick={() => setActiveTabs('All')}
+            onClick={() => setActiveTabs("All")}
           >
             All
           </Button>
@@ -101,10 +100,10 @@ const AllChats = () => {
           <Button
             variant="outline"
             className={clsx(
-              'rounded-full',
-              activeTabs === 'Unread' && 'bg-neutral-700',
+              "rounded-full",
+              activeTabs === "Unread" && "bg-neutral-700",
             )}
-            onClick={() => setActiveTabs('Unread')}
+            onClick={() => setActiveTabs("Unread")}
           >
             Unread
           </Button>
@@ -114,29 +113,12 @@ const AllChats = () => {
         <div className="flex-1 min-h-0">
           <ul className="overflow-y-auto hide-scrollbar h-full pb-5">
             {chats?.map((chat) => {
-              const avatar = chat.is_group
-                ? chat.groupMetaData?.avatar_url
-                : chat.participants![0].user.avatar_url;
-              const displayName = chat.groupMetaData
-                ? chat.groupMetaData?.name
-                : chat.participants![0].contactName ||
-                  chat.participants![0].user.username;
+              const otherMember = chat.members.find((m) => m._id !== userId);
+              const avatar = chat.isGroup ? undefined : otherMember?.avatar;
               return (
                 <li
                   key={chat._id}
-                  onClick={() => {
-                    if (chat.is_group) {
-                      setSelectedRecipientId(null);
-                      setSelectedChatId(chat._id);
-                    } else {
-                      setSelectedChatId(null);
-                      setSelectedRecipientId(
-                        chat.participants
-                          ? chat.participants[0].user._id
-                          : null,
-                      );
-                    }
-                  }}
+                  onClick={() => setSelectedChatId(chat._id)}
                   className="p-3 hover:bg-neutral-800 cursor-pointer rounded-lg mt-2 flex gap-4 transition-colors"
                 >
                   {/* Avatar */}
@@ -146,7 +128,7 @@ const AllChats = () => {
                         src={avatar}
                         width={60}
                         height={60}
-                        alt={displayName}
+                        alt={chat.name}
                         className="rounded-full object-cover"
                       />
                     ) : (
@@ -156,43 +138,32 @@ const AllChats = () => {
                     )}
 
                     {/* Online Indicator */}
-                    {!chat.is_group &&
-                      onilneUserIds.includes(
-                        chat.participants![0].user._id,
-                      ) && (
-                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-neutral-900 rounded-full"></span>
-                      )}
+                    {!chat.isGroup && otherMember && onilneUserIds.includes(otherMember._id) && (
+                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-neutral-900 rounded-full" />
+                    )}
                   </div>
 
                   {/* Chat Content */}
                   <div className="flex-1 min-w-0">
                     {/* Top Row */}
                     <div className="flex items-center justify-between">
-                      <span className="font-medium truncate">
-                        {chat.groupMetaData
-                          ? chat.groupMetaData.name
-                          : chat.participants![0].contactName ||
-                            chat.participants![0].user.username}
-                      </span>
+                      <span className="font-medium truncate">{chat.name}</span>
 
-                      {chat.last_message?.createdAt && (
+                      {chat.lastMessage?.createdAt && (
                         <span className="text-xs whitespace-nowrap ml-2 text-neutral-400">
-                          {getMessageDateTimeStamp(chat.last_message.createdAt)}
+                          {getMessageDateTimeStamp(chat.lastMessage.createdAt)}
                         </span>
                       )}
                     </div>
 
                     {/* Last Message */}
-                    {chat.last_message && (
+                    {chat.lastMessage && (
                       <p className="truncate text-sm text-neutral-400 mt-1">
-                        {chat.is_group &&
-                          (chat.last_message?.sender?.user._id ===
-                          session?.user.id
-                            ? 'me: '
-                            : (chat.last_message?.sender?.contactName ||
-                                chat.last_message?.sender.user.username) +
-                              ': ')}
-                        {chat.last_message?.content}
+                        {chat.isGroup &&
+                          (chat.lastMessage.sender._id === userId
+                            ? "me: "
+                            : (chat.lastMessage.sender.name || chat.lastMessage.sender.username) + ": ")}
+                        {chat.lastMessage.content}
                       </p>
                     )}
                   </div>

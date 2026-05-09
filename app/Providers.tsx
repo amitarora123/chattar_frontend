@@ -1,8 +1,9 @@
-'use client';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SessionProvider } from 'next-auth/react';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+"use client";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import AuthProvider from "@/lib/providers/AuthProvider";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
   const queryClient = new QueryClient({
@@ -14,20 +15,22 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
     },
   });
 
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!;
+
   return (
     <QueryClientProvider client={queryClient}>
-      <SessionProvider>
-        <TooltipProvider>
+      <TooltipProvider>
+        <GoogleOAuthProvider clientId={googleClientId}>
           {children}
-          {/* {process.env.NODE_ENV === 'development' && (
+          {process.env.NODE_ENV === "development" && (
             <ReactQueryDevtools
               position="top"
               buttonPosition="bottom-left"
               initialIsOpen={false}
             />
-          )} */}
-        </TooltipProvider>
-      </SessionProvider>
+          )}
+        </GoogleOAuthProvider>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 };

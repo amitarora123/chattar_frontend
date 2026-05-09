@@ -1,51 +1,44 @@
-import { Message } from './message.types';
-
-export interface GroupMetaData {
-  name: string;
-  description?: string;
-  avatar_url?: string;
-  created_by: string;
-}
-
-export interface ChatParticipant {
-  user: {
-    _id: string;
-    username: string;
-    avatar_url?: string | null;
-  };
-  role?: string;
-  isContact: boolean;
-  contactName: string | null;
-}
-
-export interface Chat {
+export interface ChatMember {
   _id: string;
-  is_group: boolean;
-  groupMetaData?: GroupMetaData;
-  last_message?: Message;
-  participants?: ChatParticipant[];
+  username: string;
+  email: string;
+  name: string;
+  avatar?: string;
+  isVerified: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-// export interface RecipientDetails {
-//   user: {
-//     _id: string;
-//     username: string;
-//     avatar_url?: string | null;
-//   };
-//   isContact: boolean;
-//   contactName?: string | null;
-// }
+export interface ChatLastMessage {
+  _id: string;
+  chat: string;
+  sender: ChatMember;
+  content: string;
+  type: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-// export interface ChatDetailsResponse {
-//   _id: string;
-//   isGroup: boolean;
-//   groupMetaData: {
-//     name: string;
-//     avatar_url?: string;
-//   } | null;
-//   createdAt: string;
-//   unreadCount: number;
-//   participants: ChatParticipant[];
-// }
+export interface Chat {
+  _id: string;
+  name: string;
+  isGroup: boolean;
+  members: ChatMember[];
+  lastMessage?: ChatLastMessage;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Used by GET /chats/recipient/:id
+export interface ChatParticipant {
+  user: {
+    _id: string;
+    username: string;
+    display_name: string;
+    avatar_url?: string | null;
+    last_seen: string;
+    is_active: boolean;
+  };
+  isContact: boolean;
+  contactName: string | null;
+}

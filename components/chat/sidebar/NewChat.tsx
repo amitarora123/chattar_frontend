@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import Image from 'next/image';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
 import {
   ArrowLeft,
   Grip,
@@ -7,25 +7,31 @@ import {
   User,
   UserPlus,
   UsersRound,
-} from 'lucide-react';
-import { useSidebarStore } from '@/lib/store/sidebarStore';
-import { useChatStore } from '@/lib/store/chatStore';
-import { useSession } from 'next-auth/react';
-import { getMyContacts } from '@/lib/actions/contacts';
-import { Input } from '../../ui/input';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip';
+} from "lucide-react";
+import { useSidebarStore } from "@/lib/store/sidebarStore";
+import { useChatStore } from "@/lib/store/chatStore";
+import { getMyContacts } from "@/lib/api/contacts.api";
+import { createDirectChat } from "@/lib/api/chat.api";
+import { Input } from "../../ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
 
 const NewChat = () => {
-  const { data: session } = useSession();
   const { changeSidebar } = useSidebarStore();
-  const { setSelectedChatId, setSelectedRecipientId } = useChatStore();
-
-  const { token } = session || {};
+  const { setSelectedChatId } = useChatStore();
+  const queryClient = useQueryClient();
 
   const { data: contacts } = useQuery({
-    queryKey: ['contacts', session?.user.id],
-    queryFn: async () => await getMyContacts(token!),
-    enabled: !!token,
+    queryKey: ["contacts"],
+    queryFn: getMyContacts,
+  });
+
+  const { mutate: startChat, isPending } = useMutation({
+    mutationFn: createDirectChat,
+    onSuccess: (chat) => {
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
+      setSelectedChatId(chat._id);
+      changeSidebar("AllChats");
+    },
   });
 
   return (
@@ -35,7 +41,7 @@ const NewChat = () => {
         <div className="flex gap-3 items-center">
           <button
             className="rounded-full p-2 transition-colors cursor-pointer duration-200 hover:bg-neutral-800"
-            onClick={() => changeSidebar('AllChats')}
+            onClick={() => changeSidebar("AllChats")}
           >
             <ArrowLeft size={20} />
           </button>
@@ -45,7 +51,7 @@ const NewChat = () => {
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={() => changeSidebar('DialPad')}
+              onClick={() => changeSidebar("DialPad")}
               className="rounded-full p-2 transition-colors cursor-pointer duration-200 hover:bg-neutral-800"
             >
               <Grip />
@@ -72,7 +78,7 @@ const NewChat = () => {
         {/* New Group */}
         <button
           onClick={() => {
-            changeSidebar('AddGroupMembers');
+            changeSidebar("AddGroupMembers");
           }}
           className="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-colors"
         >
@@ -85,7 +91,7 @@ const NewChat = () => {
         {/* New Contact */}
         <button
           onClick={() => {
-            changeSidebar('NewContact');
+            changeSidebar("NewContact");
           }}
           className="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-colors"
         >
@@ -100,14 +106,11 @@ const NewChat = () => {
         <p className="text-slate-300 font-semibold text-sm">
           Contacts on Chattar
         </p>
-      </div>{' '}
+      </div>{" "}
       <ul>
         {contacts?.map((contact) => (
           <li
-            onClick={() => {
-              setSelectedChatId(null);
-              setSelectedRecipientId(contact.user._id);
-            }}
+            onClick={() => !isPending && startChat(contact.user._id)}
             key={contact._id}
             className="p-3 hover:bg-neutral-800 cursor-pointer rounded-lg mt-2 flex gap-4 transition-colors"
           >

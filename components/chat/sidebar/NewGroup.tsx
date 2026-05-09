@@ -1,32 +1,29 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useGroupStore } from '@/lib/store/groupStore';
-import { useSidebarStore } from '@/lib/store/sidebarStore';
-import { createGroup } from '@/lib/actions/chat';
-import { ArrowLeft, Camera, Users } from 'lucide-react';
-import Image from 'next/image';
-import { toast } from 'sonner';
-import { AxiosError } from 'axios';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useGroupStore } from "@/lib/store/groupStore";
+import { useSidebarStore } from "@/lib/store/sidebarStore";
+import { createGroup } from "@/lib/api/chat.api";
+import { ArrowLeft, Camera, Users } from "lucide-react";
+import Image from "next/image";
+import { toast } from "sonner";
+import { AxiosError } from "axios";
+import { Button } from "@/components/ui/button";
 
 const NewGroup = () => {
   const { changeSidebar } = useSidebarStore();
   const { userIds } = useGroupStore();
-  const { data: session } = useSession();
-  const token = session?.token;
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
   const { mutate, isPending } = useMutation({
     mutationFn: async () =>
-      createGroup(token!, {
+      createGroup({
         memberIds: userIds,
         adminIds: [],
         name,
@@ -34,11 +31,11 @@ const NewGroup = () => {
         // avatar_url: avatarPreview || undefined,
       }),
     onSuccess: (data) => {
-      toast.success(data.message || 'Group Created Successfully');
+      toast.success(data.message || "Group Created Successfully");
       queryClient.invalidateQueries({
-        queryKey: ['chats'],
+        queryKey: ["chats"],
       });
-      changeSidebar('AllChats'); // go back to chats
+      changeSidebar("AllChats"); // go back to chats
     },
     onError: (error) => {
       console.log(error);
@@ -62,7 +59,7 @@ const NewGroup = () => {
       {/* Header */}
       <div className="flex items-center gap-3 p-4">
         <button
-          onClick={() => changeSidebar('AddGroupMembers')}
+          onClick={() => changeSidebar("AddGroupMembers")}
           className="p-2 rounded-full hover:bg-neutral-800"
         >
           <ArrowLeft size={20} />
@@ -124,7 +121,7 @@ const NewGroup = () => {
           disabled={!name || isPending}
           onClick={() => mutate()}
         >
-          {isPending ? 'Creating...' : 'Create Group'}
+          {isPending ? "Creating..." : "Create Group"}
         </Button>
       </div>
     </div>

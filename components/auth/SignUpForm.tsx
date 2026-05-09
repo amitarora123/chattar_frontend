@@ -18,11 +18,12 @@ import { Button } from "../ui/button";
 import Link from "next/link";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { SignUpProps } from "@/types/auth.types";
-import { checkUsernameUniqueness, signUp } from "@/lib/actions/user";
+import { checkUsernameUniqueness, signUp } from "@/lib/api/user.api";
 import { AxiosError } from "axios";
 import { Check, Loader2, X } from "lucide-react";
 import useDebounce from "@/hooks/useDebounce";
-import GoogleLoginButton from "../ui/GoogleLogin";
+import GoogleLoginButton from "./GoogleLogin";
+import { showErrorMessage, showSuccessMessage } from "@/lib/utils";
 
 const signUpSchema = z
   .object({
@@ -119,13 +120,16 @@ const SignUpForm = () => {
     mutationFn: async (data: SignUpProps) => await signUp(data),
     mutationKey: ["sign-up"],
     onSuccess: (data) => {
-      toast.success("Sign Up Successful\nPlease verify to continue");
+      showSuccessMessage("Sign Up Successful\nPlease verify to continue");
+      sessionStorage.setItem(
+        "verification-email",
+        signUpForm.getValues("email"),
+      );
+      signUpForm.reset();
       router.replace(`/auth/verify/${data._id}`);
     },
     onError: (error) => {
-      const axiosError = error as AxiosError;
-      const { message } = axiosError?.response?.data as { message: string };
-      toast.error(message || "Internal Server Error");
+      showErrorMessage(error);
     },
   });
 

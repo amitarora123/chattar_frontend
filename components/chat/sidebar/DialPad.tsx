@@ -1,22 +1,22 @@
-import { useQuery } from '@tanstack/react-query';
-import Image from 'next/image';
-import { ArrowLeft, User } from 'lucide-react';
-import { useSidebarStore } from '@/lib/store/sidebarStore';
-import { useState } from 'react';
-import { searchUsers } from '@/lib/actions/user';
-import useDebounce from '@/hooks/useDebounce';
-import { useChatStore } from '@/lib/store/chatStore';
+import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
+import { ArrowLeft, User } from "lucide-react";
+import { useSidebarStore } from "@/lib/store/sidebarStore";
+import { useState } from "react";
+import { searchUsers } from "@/lib/api/user.api";
+import useDebounce from "@/hooks/useDebounce";
+import { useChatStore } from "@/lib/store/chatStore";
 
 const DialPad = () => {
   const { changeSidebar } = useSidebarStore();
   const { setSelectedChatId, setSelectedRecipientId } = useChatStore();
 
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState("");
 
   const debouncedUsername = useDebounce(username, 500);
 
   const { data: users, isLoading: isChecking } = useQuery({
-    queryKey: ['chats', debouncedUsername],
+    queryKey: ["chats", debouncedUsername],
     queryFn: async () => await searchUsers({ username: debouncedUsername }),
     enabled: debouncedUsername.length > 3,
   });
@@ -27,7 +27,7 @@ const DialPad = () => {
         <div className="flex gap-3 items-center">
           <button
             className="rounded-full p-2 transition-colors cursor-pointer duration-200 hover:bg-neutral-800"
-            onClick={() => changeSidebar('NewChat')}
+            onClick={() => changeSidebar("NewChat")}
           >
             <ArrowLeft size={20} />
           </button>
@@ -47,9 +47,9 @@ const DialPad = () => {
       <div className="my-10">
         <p className="text-center text-slate-400 text-sm font-semibold">
           {username.length < 3
-            ? 'Enter a Username to start a chat'
+            ? "Enter a Username to start a chat"
             : (!users || users.length === 0) && !isChecking
-              ? 'No User Found With this username'
+              ? "No User Found With this username"
               : null}
         </p>
       </div>

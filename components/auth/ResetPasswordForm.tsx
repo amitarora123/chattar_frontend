@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import CustomFormField from "../form/CustomFormField";
 import { Button } from "../ui/button";
 import { useMutation } from "@tanstack/react-query";
-import { resetPassword } from "@/lib/actions/user";
+import { resetPassword } from "@/lib/api/user.api";
 import { AxiosError } from "axios";
 import { useEffect } from "react";
 

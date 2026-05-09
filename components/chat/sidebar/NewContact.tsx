@@ -1,30 +1,27 @@
-'use client';
+"use client";
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
-import { useSidebarStore } from '@/lib/store/sidebarStore';
-import { useState } from 'react';
-import { checkUsernameUniqueness } from '@/lib/actions/user';
-import useDebounce from '@/hooks/useDebounce';
-import { useSession } from 'next-auth/react';
-import { createContacts } from '@/lib/actions/contacts';
-import { toast } from 'sonner';
-import { Button } from '../../ui/button';
-import { AxiosError } from 'axios';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft } from "lucide-react";
+import { useSidebarStore } from "@/lib/store/sidebarStore";
+import { useState } from "react";
+import { checkUsernameUniqueness } from "@/lib/api/user.api";
+import useDebounce from "@/hooks/useDebounce";
+import { createContacts } from "@/lib/api/contacts.api";
+import { toast } from "sonner";
+import { Button } from "../../ui/button";
+import { AxiosError } from "axios";
 
 const NewContact = () => {
-  const { data: session } = useSession();
-  const token = session?.token;
   const { changeSidebar } = useSidebarStore();
 
-  const [name, setName] = useState('');
-  const [username, setUsername] = useState('');
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
 
   const debouncedUsername = useDebounce(username, 500);
   const queryClient = useQueryClient();
 
   const { data: isUsernameUnique, isFetching: checking } = useQuery({
-    queryKey: ['check-username', debouncedUsername],
+    queryKey: ["check-username", debouncedUsername],
     queryFn: () => checkUsernameUniqueness(debouncedUsername),
     enabled: !!debouncedUsername && debouncedUsername.length >= 3,
     staleTime: 1000 * 60, // cache 1 min
@@ -34,21 +31,21 @@ const NewContact = () => {
 
   const { mutate, isPending } = useMutation({
     mutationFn: () =>
-      createContacts(token!, {
+      createContacts({
         name,
         username: debouncedUsername,
       }),
     onSuccess: () => {
-      toast.success('Contact created');
+      toast.success("Contact created");
       queryClient.invalidateQueries({
-        queryKey: ['chats'],
+        queryKey: ["chats"],
       });
       queryClient.invalidateQueries({
-        queryKey: ['contacts'],
+        queryKey: ["contacts"],
       });
-      setName('');
-      setUsername('');
-      changeSidebar('NewChat');
+      setName("");
+      setUsername("");
+      changeSidebar("NewChat");
     },
     onError: (error) => {
       const axiosError = error as AxiosError;
@@ -60,18 +57,13 @@ const NewContact = () => {
   /* ---------------- Submit ---------------- */
 
   const handleSubmit = () => {
-    if (!token) {
-      toast.error('Invalid token');
-      return;
-    }
-
     if (!userExists) {
-      toast.error('Username does not exist');
+      toast.error("Username does not exist");
       return;
     }
 
     if (!name.trim() || !username.trim()) {
-      toast.error('All fields are required');
+      toast.error("All fields are required");
       return;
     }
 
@@ -89,7 +81,7 @@ const NewContact = () => {
       <div className="flex items-center gap-3 mb-6">
         <button
           className="rounded-full p-2 hover:bg-blue-600/20 transition"
-          onClick={() => changeSidebar('NewChat')}
+          onClick={() => changeSidebar("NewChat")}
         >
           <ArrowLeft size={20} />
         </button>
@@ -132,7 +124,7 @@ const NewContact = () => {
           variant="default"
           className="w-full mt-6 bg-blue-900! hover:bg-blue-700  "
         >
-          {isPending ? 'Saving...' : 'Save Contact'}
+          {isPending ? "Saving..." : "Save Contact"}
         </Button>
       </div>
     </div>

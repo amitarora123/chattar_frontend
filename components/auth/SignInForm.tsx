@@ -1,8 +1,6 @@
 "use client";
 
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -18,7 +16,11 @@ import CustomFormField from "../form/CustomFormField";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { useState } from "react";
-import GoogleLoginButton from "../ui/GoogleLogin";
+import GoogleLoginButton from "./GoogleLogin";
+import { useMutation } from "@tanstack/react-query";
+import { signIn } from "@/lib/api/auth.api";
+import { showErrorMessage, showSuccessMessage } from "@/lib/utils";
+import { setRefreshToken } from "@/lib/auth/session";
 
 const signInSchema = z.object({
   email: z.email(),
@@ -28,7 +30,6 @@ const signInSchema = z.object({
 type SignInSchema = z.infer<typeof signInSchema>;
 
 const SignInForm = () => {
-  const [isPending, setIsPending] = useState(false);
   const router = useRouter();
 
   const signInForm = useForm<SignInSchema>({
@@ -39,25 +40,20 @@ const SignInForm = () => {
     resolver: zodResolver(signInSchema),
   });
 
-  const handleSignIn = async ({ email, password }: SignInSchema) => {
-    try {
-      setIsPending(true);
-      const res = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-      if (res.ok) router.replace("/chats");
-      if (res.error) {
-        toast.error(res.code);
-      }
-    } catch (error) {
-      console.log(error);
-      const { message } = error as { message: string };
-      toast.error(message || "Internal Server Error");
-    } finally {
-      setIsPending(false);
-    }
+  const signInMutation = useMutation({
+    mutationKey: ["sign-in"],
+    mutationFn: signIn,
+    onSuccess: (data) => {
+      setRefreshToken(data.refreshToken);
+      router.replace("/chats");
+    },
+    onError: (error) => {
+      showErrorMessage(error);
+    },
+  });
+
+  const handleSignIn = async (data: SignInSchema) => {
+    signInMutation.mutate(data);
   };
 
   return (
@@ -92,9 +88,9 @@ const SignInForm = () => {
             type="submit"
             className="bg-authBtn text-white cursor-pointer hover:bg-authBtn hover:opacity-85"
             onClick={() => signInForm.handleSubmit(handleSignIn)}
-            disabled={isPending}
+            disabled={signInMutation.isPending}
           >
-            {isPending ? "Signing in..." : "Sign in"}
+            {signInMutation.isPending ? "Signing in..." : "Sign in"}
           </Button>
         </form>
         <CardFooter className="p-0 mt-5 flex flex-col gap-3 items-start">

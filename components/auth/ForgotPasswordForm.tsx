@@ -16,7 +16,7 @@ import CustomFormField from "../form/CustomFormField";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
-import { forgotPassword } from "@/lib/actions/user";
+import { forgotPassword } from "@/lib/api/user.api";
 import { AxiosError } from "axios";
 
 const forgotPasswordSchema = z.object({

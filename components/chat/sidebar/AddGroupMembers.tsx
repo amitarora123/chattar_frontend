@@ -1,30 +1,27 @@
-import { useQuery } from '@tanstack/react-query';
-import Image from 'next/image';
-import { ArrowLeft, ArrowRight, User } from 'lucide-react';
-import { useSidebarStore } from '@/lib/store/sidebarStore';
-import { useSession } from 'next-auth/react';
-import { getMyContacts } from '@/lib/actions/contacts';
-import { useGroupStore } from '@/lib/store/groupStore';
+import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
+import { ArrowLeft, ArrowRight, User } from "lucide-react";
+import { useSidebarStore } from "@/lib/store/sidebarStore";
+import { getMyContacts } from "@/lib/api/contacts.api";
+import { useGroupStore } from "@/lib/store/groupStore";
 
 const AddGroupMembers = () => {
-  const { data: session } = useSession();
-  const { token } = session || {};
+  const userId = "123455";
   const { changeSidebar } = useSidebarStore();
   const { userIds, selectUserId, unSelectUserId, setUserIds } = useGroupStore();
 
   const { data: contacts } = useQuery({
-    queryKey: ['contacts', session?.user.id],
-    queryFn: async () => await getMyContacts(token!),
-    enabled: !!token,
+    queryKey: ["contacts", userId],
+    queryFn: getMyContacts,
   });
 
   const filteredContacts = contacts?.filter(
-    (c) => !(userIds.includes(c.user._id) || c.user._id === session?.user.id),
+    (c) => !(userIds.includes(c.user._id) || c.user._id === userId),
   );
 
   return (
     <div className="p-3">
-      {' '}
+      {" "}
       {/* Logo */}
       <div className="flex w-full relative justify-between items-center">
         <div className="flex gap-3 items-center">
@@ -32,7 +29,7 @@ const AddGroupMembers = () => {
             className="rounded-full p-2 transition-colors cursor-pointer duration-200 hover:bg-neutral-800"
             onClick={() => {
               setUserIds([]);
-              changeSidebar('NewChat');
+              changeSidebar("NewChat");
             }}
           >
             <ArrowLeft size={20} />
@@ -137,7 +134,7 @@ const AddGroupMembers = () => {
       </ul>
       <div className="absolute bottom-0 h-40 flex items-center justify-center w-full">
         <button
-          onClick={() => changeSidebar('NewGroup')}
+          onClick={() => changeSidebar("NewGroup")}
           className=" cursor-pointer text-black  bg-blue-700 rounded-full p-2 hover:scale-125 transition-transform duration-150 ease"
         >
           <ArrowRight size={25} />

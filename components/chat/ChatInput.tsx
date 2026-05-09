@@ -1,61 +1,57 @@
-import { Plus, Send } from 'lucide-react';
-import { Input } from '../ui/input';
-import { Button } from '../ui/button';
-import { sendMessage } from '@/lib/actions/message';
-import { SendMessageProps } from '@/types/message.types';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useRef } from 'react';
-import { toast } from 'sonner';
-import { useChatStore } from '@/lib/store/chatStore';
-import { Session } from 'next-auth';
-import { socket } from '@/lib/socket/socketClient';
-import { getChatKey } from '@/lib/utils';
+import { Plus, Send } from "lucide-react";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { sendMessage } from "@/lib/api/message.api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useRef } from "react";
+import { socket } from "@/lib/socket/socketClient";
+import { useAuth } from "@/lib/providers/AuthProvider";
 
-const ChatInput = ({ session }: { session: Session | null }) => {
-  const { token } = session || {};
+interface ChatInputProps {
+  chatId: string;
+}
 
-  const { selectedChatId, selectedRecipientId } = useChatStore();
-  const [value, setValue] = useState('');
+const ChatInput = ({ chatId }: ChatInputProps) => {
+  const userId = useAuth().user?._id;
+
+  const [value, setValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const queryClient = useQueryClient();
 
   const { mutate: sendMessageMutation } = useMutation({
-    mutationFn: ({ token, data }: { token: string; data: SendMessageProps }) =>
-      sendMessage(token, data),
-
+    mutationFn: sendMessage,
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['chats'],
-      });
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
     },
   });
 
   const handleSendMessage = () => {
-    if (!token) {
-      toast.error('Invalid token');
-      return;
-    } else if (!selectedChatId && !selectedRecipientId) {
-      toast.error('Invalid chatId or recipientId');
-      return;
-    } else {
-      sendMessageMutation({
-        token,
-        data: {
-          content: value,
-          is_group: selectedChatId ? true : false,
-          chat_id: selectedChatId ? selectedChatId : undefined,
-          recipient_id: selectedRecipientId ? selectedRecipientId : undefined,
-        },
-      });
-      setValue('');
-    }
+    if (!value.trim()) return;
+    sendMessageMutation({ content: value, chat_id: chatId });
+    setValue("");
   };
 
-  if (!selectedChatId && !selectedRecipientId) {
-    return null;
-  }
+  const handleTyping = (text: string) => {
+    setValue(text);
+
+    if (!userId) return;
+
+    const room = `chat:${chatId}`;
+
+    if (!isTyping) {
+      socket.emit("typing:start", { room, userId });
+      setIsTyping(true);
+    }
+
+    clearTimeout(typingTimeout.current ?? undefined);
+
+    typingTimeout.current = setTimeout(() => {
+      socket.emit("typing:stop", { room, userId });
+      setIsTyping(false);
+    }, 2000);
+  };
 
   return (
     <div className="relative ">
@@ -64,38 +60,9 @@ const ChatInput = ({ session }: { session: Session | null }) => {
         placeholder="Type a message"
         value={value}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') handleSendMessage();
+          if (e.key === "Enter") handleSendMessage();
         }}
-        onChange={(e) => {
-          const text = e.target.value;
-          setValue(text);
-
-          if (!session?.user?.id) return;
-
-          const room = selectedChatId
-            ? `chat:${selectedChatId}`
-            : `chat:${getChatKey(session.user.id, selectedRecipientId!)}`;
-
-          if (!isTyping) {
-            socket.emit('typing:start', {
-              room,
-              userId: session.user.id,
-            });
-
-            setIsTyping(true);
-          }
-
-          clearTimeout(typingTimeout.current ?? undefined);
-
-          typingTimeout.current = setTimeout(() => {
-            socket.emit('typing:stop', {
-              room,
-              userId: session.user.id,
-            });
-
-            setIsTyping(false);
-          }, 2000);
-        }}
+        onChange={(e) => handleTyping(e.target.value)}
       />
       {value.length > 0 ? (
         <div className="absolute right-1 top-0  items-center h-full flex ">
@@ -104,8 +71,8 @@ const ChatInput = ({ session }: { session: Session | null }) => {
             variant="outline"
             className="  rounded-full"
           >
-            {' '}
-            <Send />{' '}
+            {" "}
+            <Send />{" "}
           </Button>
         </div>
       ) : null}

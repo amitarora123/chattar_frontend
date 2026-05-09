@@ -9,80 +9,58 @@ import {
   CardHeader,
   CardTitle,
 } from "../ui/card";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  getUserDetails,
-  resendVerificationOtp,
-  verifyUser,
-} from "@/lib/actions/user";
-import { AxiosError } from "axios";
-import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
+import { resendVerificationOtp, verifyUser } from "@/lib/api/user.api";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import OtpInput from "../form/OtpInput";
 import { useTimer } from "@/hooks/useTimer";
-import { getSecondsLeft } from "@/lib/utils";
+import {
+  getSecondsLeft,
+  showErrorMessage,
+  showSuccessMessage,
+} from "@/lib/utils";
 
 const OTP_LENGTH = 6;
 
-const VerificationForm = ({ user_id }: { user_id: string }) => {
-  const { update } = useSession();
+const VerificationForm = () => {
+  const [email, setEmail] = useState("");
   const router = useRouter();
 
   const [otpCode, setOtpCode] = useState<string>("");
 
   const { secondsLeft, setSecondsLeft } = useTimer();
 
-  const { data: user } = useQuery({
-    queryKey: [user_id, "user-details"],
-    queryFn: async () => await getUserDetails(user_id),
-  });
-
   const { mutate: resendOtp } = useMutation({
-    mutationKey: ["resend-otp", user_id],
-    mutationFn: async (user_id: string) => await resendVerificationOtp(user_id),
+    mutationKey: ["resend-otp", email],
+    mutationFn: async (email: string) => await resendVerificationOtp(email),
     onError: (error) => {
-      const axiosError = error as AxiosError;
-      const { message } = (axiosError?.response?.data || {}) as {
-        message: string;
-      };
-
-      toast.error(message || "Internal Server Error");
+      showErrorMessage(error);
     },
     onSuccess: (data) => {
       const { message } = data as { message: string };
-      toast.success(message || "Otp Resend Successfully");
+      showSuccessMessage(message);
       const secondsLeft = getSecondsLeft(data.resendAvailableAt);
       setSecondsLeft(secondsLeft);
     },
   });
 
   const { mutate: verifyUserMutation } = useMutation({
-    mutationKey: ["verify-user", user_id, otpCode],
-    mutationFn: async ({ user_id, code }: { user_id: string; code: string }) =>
-      await verifyUser(user_id, code),
+    mutationKey: ["verify-user", email, otpCode],
+    mutationFn: verifyUser,
     onError: (error) => {
-      const axiosError = error as AxiosError;
-      const { message } = (axiosError?.response?.data || {}) as {
-        message: string;
-      };
-
-      toast.error(message || "Internal Server Error");
+      showErrorMessage(error);
     },
     onSuccess: async (data) => {
       const { message } = data as { message: string };
-      await update({
-        isVerified: true,
-      });
-      toast.success(message || "User Verified Successfully");
+      showSuccessMessage(message);
       router.replace("/chats");
     },
   });
 
   const handleSubmit = useCallback(() => {
-    verifyUserMutation({ user_id, code: otpCode });
-  }, [user_id, otpCode, verifyUserMutation]);
-
+    if (!email) return;
+    verifyUserMutation({ email, otp: otpCode });
+  }, [email, otpCode, verifyUserMutation]);
   useEffect(() => {
     if (otpCode.length === OTP_LENGTH) {
       handleSubmit();
@@ -90,12 +68,22 @@ const VerificationForm = ({ user_id }: { user_id: string }) => {
   }, [otpCode, handleSubmit]);
 
   useEffect(() => {
-    if (!user?.otp) return;
-    const secondsLeft = getSecondsLeft(user.otp.resendAvailableAt);
-    setSecondsLeft(secondsLeft);
-  }, [user?.otp, setSecondsLeft]);
+    const handleSetEmail = () => {
+      if (!sessionStorage) return;
+      const email = sessionStorage.getItem("verification-email");
 
-  const email = user?.email ?? "";
+      if (!email) return;
+
+      setEmail(email);
+    };
+    handleSetEmail();
+  }, []);
+
+  if (!email) {
+    showErrorMessage("Verification Email is required");
+    return <div>Verification Email is Null</div>;
+  }
+
   const [localPart, domain] = email.split("@");
 
   return (
@@ -121,7 +109,7 @@ const VerificationForm = ({ user_id }: { user_id: string }) => {
           <button
             className={`text-blue-400  font-semibold  ${secondsLeft > 0 ? "cursor-not-allowed text-white" : "cursor-pointer hover:underline"}`}
             onClick={() => {
-              resendOtp(user_id);
+              resendOtp(email);
             }}
             disabled={secondsLeft > 0}
             aria-disabled={secondsLeft > 0}

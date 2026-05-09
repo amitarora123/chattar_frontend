@@ -1,5 +1,5 @@
-'use client';
-import { Button } from '@/components/ui/button';
+"use client";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,32 +8,50 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { User } from 'lucide-react';
-import { signOut, useSession } from 'next-auth/react';
-import Image from 'next/image';
-import Link from 'next/link';
+} from "@/components/ui/dropdown-menu";
+import { logout } from "@/lib/api/auth.api";
+import { useMutation } from "@tanstack/react-query";
+import { User } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const ProfileDropdown = ({
-  className = '',
+  className = "",
   size = 40,
 }: {
   className?: string;
   size?: number;
 }) => {
-  const { data } = useSession();
+  const user = {
+    avatar_url: null,
+    username: "amitarora123",
+  };
+
+  const router = useRouter();
+
+  const logoutMutation = useMutation({
+    mutationKey: ["logout"],
+    mutationFn: logout,
+    onSuccess: () => {
+      router.replace("/auth/sign-in");
+    },
+  });
+  const handleLogout = async () => {
+    logoutMutation.mutate();
+  };
 
   return (
     <div className={className}>
       <DropdownMenu>
         <DropdownMenuTrigger className="cursor-pointer" asChild>
-          {data?.user.avatar_url ? (
+          {user.avatar_url ? (
             <Image
               className="rounded-full"
-              src={data.user.avatar_url}
+              src={user.avatar_url}
               width={size}
               height={size}
-              alt={data.user.username}
+              alt={user.username}
             />
           ) : (
             <Button variant="outline">
@@ -51,9 +69,7 @@ const ProfileDropdown = ({
           <DropdownMenuSeparator />
 
           <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => signOut()}>
-              Log out
-            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -76,7 +76,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased dark`}
       >
         <Providers>{children}</Providers>
-        <Toaster />
+        <Toaster theme="dark" />
       </body>
     </html>
   );
