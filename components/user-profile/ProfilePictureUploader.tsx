@@ -14,10 +14,11 @@ const ProfilePictureUploader = ({ preview, setFile }: Props) => {
     ref.current!.click();
   };
   return (
-    <div className="rounded-full border-2 relative border-primary">
+    <div className="rounded-full w-[150] h-[150] border-2 relative border-primary">
       <input
         ref={ref}
         type="file"
+        className="hidden"
         accept="image/*"
         onChange={(e) => {
           if (e.target.files && e.target.files[0]) {
@@ -33,7 +34,7 @@ const ProfilePictureUploader = ({ preview, setFile }: Props) => {
           alt="Preview"
           width={150}
           height={150}
-          className="object-cover rounded-full"
+          className="object-cover w-[150] h-[150] rounded-full"
         />
       ) : (
         <User2 onClick={handleSelectImage} className="size-50" />

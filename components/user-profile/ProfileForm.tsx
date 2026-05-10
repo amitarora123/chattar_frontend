@@ -1,37 +1,42 @@
 "use client";
-import { getUserDetails } from "@/lib/api/user.api";
+import { getMe, updateMe } from "@/lib/api/user.api";
+import { uploadImage } from "@/lib/api/cloudinary.api";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useState } from "react";
 import ProfilePictureUploader from "./ProfilePictureUploader";
 import CustomFormField from "../form/CustomFormField";
 import z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "../ui/button";
+import { showErrorMessage } from "@/lib/utils";
 
 const profileSchema = z.object({
   username: z.string().min(4, "Username must be at least 4 characters"),
   display_name: z.string().optional(),
   email: z.string().optional(),
-  avatar_url: z.string().optional(),
-  is_active: z.boolean(),
 });
 
 type ProfileSchema = z.infer<typeof profileSchema>;
 
 const ProfileForm = () => {
-  const { data } = useSession();
   const [file, setFile] = useState<File | null>(null);
 
   const { data: userDetails, isLoading } = useQuery({
     queryKey: ["profile"],
-    queryFn: async () => getUserDetails(data!.user.id),
-    enabled: !!data?.user.id,
+    queryFn: getMe,
   });
 
-  const {} = useMutation({
-    mutationKey: ["profile", "save"],
-    mutationFn: 
+  const uploadImageMutation = useMutation({
+    mutationFn: uploadImage,
+    onError: (error) => {
+      showErrorMessage(error);
+    },
+  });
+
+  const saveUserMutation = useMutation({
+    mutationKey: ["profile-save"],
+    mutationFn: updateMe,
   });
 
   const preview = useMemo(() => {
@@ -46,13 +51,25 @@ const ProfileForm = () => {
       email: "",
       username: "",
       display_name: "",
-      avatar_url: "",
-      is_active: true,
     },
     resolver: zodResolver(profileSchema),
   });
 
-  const handleSaveProfile = async (data: ProfileSchema) => {};
+  const handleSaveProfile = async (data: ProfileSchema) => {
+    console.log(data);
+    let avatarUrl = userDetails?.avatar_url;
+
+    if (file) {
+      const { secure_url } = await uploadImageMutation.mutateAsync(file);
+      avatarUrl = secure_url;
+    }
+
+    saveUserMutation.mutate({
+      name: data.display_name,
+      avatar_url: avatarUrl,
+      is_active: true,
+    });
+  };
 
   useEffect(() => {
     if (userDetails) {
@@ -60,37 +77,24 @@ const ProfileForm = () => {
     }
   }, [userDetails, profileForm]);
 
+  if (isLoading) return null;
+
   return (
-    <div>
+    <div className="px-10 flex border-r border-border items-center flex-col py-5 w-100">
       <ProfilePictureUploader preview={preview} setFile={setFile} />
       <form
         id="form-signIn"
-        className="flex flex-col gap-5"
+        className="flex flex-col gap-5 w-full"
         onSubmit={profileForm.handleSubmit(handleSaveProfile)}
       >
         <div>
           <CustomFormField
             control={profileForm.control}
-            label={
-              <p className="w-full flex items-center justify-between">
-                <span>Username</span>
-                {isEnabled &&
-                  (usernameLoading ? (
-                    <Loader2 className="animate-spin" />
-                  ) : isUsernameUnique ? (
-                    <span className="text-green-400 flex justify-center items-center gap-2">
-                      Username is available <Check />
-                    </span>
-                  ) : (
-                    <span className="text-red-400 flex justify-center items-center gap-2">
-                      Username is not available <X />
-                    </span>
-                  ))}
-              </p>
-            }
+            label="Username"
             type="text"
             name="username"
             placeholder="Enter your username"
+            disabled
           />
         </div>
 
@@ -100,30 +104,26 @@ const ProfileForm = () => {
           type="email"
           name="email"
           placeholder="Enter your email"
+          disabled
         />
-
         <CustomFormField
           control={profileForm.control}
-          label="Password"
-          type="password"
-          name="password"
-          placeholder="Enter your password"
-        />
-
-        <CustomFormField
-          control={profileForm.control}
-          label="Confirm Password"
-          type="password"
-          name="confirmPassword"
-          placeholder="Confirm your password"
+          label="Name"
+          type="text"
+          name="display_name"
+          placeholder="Enter your name"
         />
 
         <Button
           type="submit"
-          disabled={isPending}
-          className="bg-authBtn text-white cursor-pointer hover:bg-authBtn hover:opacity-85"
+          disabled={uploadImageMutation.isPending || saveUserMutation.isPending}
+          className="bg-authBtn text-white disabled:opacity-60 cursor-pointer hover:bg-authBtn hover:opacity-85"
         >
-          {isPending ? "Signing up..." : "Sign Up"}
+          {uploadImageMutation.isPending
+            ? "Uploading..."
+            : saveUserMutation.isPending
+              ? "Saving..."
+              : "Save"}
         </Button>
       </form>
     </div>

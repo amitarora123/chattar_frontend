@@ -1,13 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-import {
-  ArrowLeft,
-  Grip,
-  Search,
-  User,
-  UserPlus,
-  UsersRound,
-} from "lucide-react";
+import { ArrowLeft, Grip, Search, User, UserPlus, UsersRound } from "lucide-react";
 import { useSidebarStore } from "@/lib/store/sidebarStore";
 import { useChatStore } from "@/lib/store/chatStore";
 import { getMyContacts } from "@/lib/api/contacts.api";
@@ -17,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
 
 const NewChat = () => {
   const { changeSidebar } = useSidebarStore();
-  const { setSelectedChatId } = useChatStore();
+  const { selectChat } = useChatStore();
   const queryClient = useQueryClient();
 
   const { data: contacts } = useQuery({
@@ -29,7 +22,7 @@ const NewChat = () => {
     mutationFn: createDirectChat,
     onSuccess: (chat) => {
       queryClient.invalidateQueries({ queryKey: ["chats"] });
-      setSelectedChatId(chat._id);
+      selectChat(chat);
       changeSidebar("AllChats");
     },
   });
@@ -103,9 +96,7 @@ const NewChat = () => {
       </div>
       {/* contact List */}
       <div className="px-3">
-        <p className="text-slate-300 font-semibold text-sm">
-          Contacts on Chattar
-        </p>
+        <p className="text-slate-300 font-semibold text-sm">Contacts on Chattar</p>
       </div>{" "}
       <ul>
         {contacts?.map((contact) => (

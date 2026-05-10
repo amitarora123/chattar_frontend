@@ -10,8 +10,6 @@ export async function proxy(req: NextRequest) {
   const cookieStore = await cookies();
   const refreshToken = cookieStore.get("refreshToken");
 
-  console.log(refreshToken);
-
   const isLoggedIn = !!refreshToken;
 
   if (isLoggedIn) {

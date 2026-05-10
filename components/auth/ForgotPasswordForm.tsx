@@ -1,14 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,8 +9,9 @@ import CustomFormField from "../form/CustomFormField";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
-import { forgotPassword } from "@/lib/api/user.api";
+import { forgotPassword } from "@/lib/api/auth.api";
 import { AxiosError } from "axios";
+import { showSuccessMessage } from "@/lib/utils";
 
 const forgotPasswordSchema = z.object({
   email: z.email(),
@@ -34,12 +28,11 @@ const ForgotPasswordForm = () => {
   });
 
   const { mutate: forgotPasswordMutation, isPending } = useMutation({
-    mutationFn: async ({ email }: ForgotPasswordSchema) =>
-      await forgotPassword(email),
+    mutationFn: async ({ email }: ForgotPasswordSchema) => await forgotPassword(email),
 
     mutationKey: ["forgot-password"],
-    onSuccess: (data) => {
-      toast.success(data.message || "If an account exists, reset link sent");
+    onSuccess: () => {
+      showSuccessMessage("Password reset successful");
       forgotPasswordForm.reset();
     },
     onError: (error) => {
@@ -54,17 +47,14 @@ const ForgotPasswordForm = () => {
       <CardHeader>
         <CardTitle className="text-xl font-bold">Forgot Password</CardTitle>
         <CardDescription>
-          No worries — enter your email and we’ll send you a secure link to
-          reset your password.
+          No worries — enter your email and we’ll send you a secure link to reset your password.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form
           id="form-signIn"
           className="flex flex-col gap-5"
-          onSubmit={forgotPasswordForm.handleSubmit((data) =>
-            forgotPasswordMutation(data),
-          )}
+          onSubmit={forgotPasswordForm.handleSubmit((data) => forgotPasswordMutation(data))}
         >
           <CustomFormField
             control={forgotPasswordForm.control}
@@ -77,11 +67,7 @@ const ForgotPasswordForm = () => {
           <Button
             type="submit"
             className="bg-authBtn text-white cursor-pointer hover:bg-authBtn hover:opacity-85"
-            onClick={() =>
-              forgotPasswordForm.handleSubmit((data) =>
-                forgotPasswordMutation(data),
-              )
-            }
+            onClick={() => forgotPasswordForm.handleSubmit((data) => forgotPasswordMutation(data))}
             disabled={isPending}
           >
             {isPending ? "Submitting..." : "Submit"}
@@ -89,10 +75,7 @@ const ForgotPasswordForm = () => {
         </form>
         <CardFooter className="p-0 mt-5 flex flex-col gap-3 items-start">
           <p className="font-bold text-sm">
-            <Link
-              href="/auth/sign-in"
-              className="text-blue-400 hover:underline"
-            >
+            <Link href="/auth/sign-in" className="text-blue-400 hover:underline">
               Sign in
             </Link>
           </p>

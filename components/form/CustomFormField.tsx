@@ -1,8 +1,8 @@
-import { Controller, Control, FieldValues, Path } from 'react-hook-form';
-import { Field, FieldDescription, FieldError, FieldLabel } from '../ui/field';
-import { Input } from '../ui/input';
-import { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Controller, Control, FieldValues, Path } from "react-hook-form";
+import { Field, FieldDescription, FieldError, FieldLabel } from "../ui/field";
+import { Input } from "../ui/input";
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 interface CustomFormFieldProps<T extends FieldValues> {
   control: Control<T>;
@@ -11,6 +11,7 @@ interface CustomFormFieldProps<T extends FieldValues> {
   placeholder?: string;
   description?: string;
   type?: string;
+  disabled?: boolean;
 }
 
 const CustomFormField = <T extends FieldValues>({
@@ -20,6 +21,7 @@ const CustomFormField = <T extends FieldValues>({
   placeholder,
   description,
   type,
+  disabled = false,
 }: CustomFormFieldProps<T>) => {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -31,15 +33,16 @@ const CustomFormField = <T extends FieldValues>({
         <Field data-invalid={fieldState.invalid}>
           <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
 
-          {type === 'password' ? (
+          {type === "password" ? (
             <div className="relative">
               <Input
                 {...field}
                 id={field.name}
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 aria-invalid={fieldState.invalid}
                 placeholder={placeholder}
                 autoComplete="off"
+                disabled={disabled}
               />
               <button
                 type="button"
@@ -57,6 +60,7 @@ const CustomFormField = <T extends FieldValues>({
               aria-invalid={fieldState.invalid}
               placeholder={placeholder}
               autoComplete="off"
+              disabled={disabled}
             />
           )}
 

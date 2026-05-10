@@ -1,8 +1,8 @@
-import { getMessageDateTimeStamp } from '@/lib/utils';
-import { Message } from '@/types/message.types';
-import clsx from 'clsx';
-import { User } from 'lucide-react';
-import Image from 'next/image';
+import { getMessageDateTimeStamp } from "@/lib/utils";
+import { Message } from "@/types/message.types";
+import clsx from "clsx";
+import { User } from "lucide-react";
+import Image from "next/image";
 
 interface ChatBubbleProps {
   message: Message;
@@ -15,25 +15,20 @@ const ChatBubble = ({
   isGroup,
   message: { sender, content, createdAt },
 }: ChatBubbleProps) => {
-  const isMyMessage = sender._id === userId;
+  const isMyMessage = sender.user._id === userId;
 
   return (
-    <div
-      className={clsx(
-        'flex items-center',
-        `${isMyMessage ? 'justify-end' : 'justify-start'}`,
-      )}
-    >
+    <div className={clsx("flex items-center", `${isMyMessage ? "justify-end" : "justify-start"}`)}>
       <div className="flex items-start gap-2">
         {isGroup && !isMyMessage ? (
           <div className="rounded-full">
-            {sender.avatar ? (
+            {sender.user.avatar_url ? (
               <Image
-                src={sender.avatar}
+                src={sender.user.avatar_url}
                 width={30}
                 height={30}
                 className="rounded-full"
-                alt={sender.username}
+                alt={sender.user.username}
               />
             ) : (
               <User />
@@ -43,13 +38,11 @@ const ChatBubble = ({
         <div className=" text-white bg-neutral-800 rounded-lg px-3 py-2">
           {!isMyMessage && (
             <p className="text-xs text-slate-400">
-              {sender.name ? sender.name : `~ ${sender.username}`}
+              {sender.contactName || `~ ${sender.user.display_name || sender.user.username}`}
             </p>
           )}
           {content}
-          <p className="text-xs mr-2 text-slate-400">
-            {getMessageDateTimeStamp(createdAt)}
-          </p>
+          <p className="text-xs mr-2 text-slate-400">{getMessageDateTimeStamp(createdAt)}</p>
         </div>
       </div>
     </div>

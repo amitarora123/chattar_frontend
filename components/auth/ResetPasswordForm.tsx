@@ -2,20 +2,14 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import CustomFormField from "../form/CustomFormField";
 import { Button } from "../ui/button";
 import { useMutation } from "@tanstack/react-query";
-import { resetPassword } from "@/lib/api/user.api";
+import { resetPassword } from "@/lib/api/auth.api";
 import { AxiosError } from "axios";
 import { useEffect } from "react";
 
@@ -98,11 +92,8 @@ const ResetPasswordForm = () => {
     mutationFn: async (data: ResetPasswordSchema) =>
       await resetPassword({ ...data, newPassword: data.password }),
     mutationKey: ["reset-password"],
-    onSuccess: (data) => {
-      toast.success(
-        data.message ||
-          "password reset successfully Please Sign in to continue",
-      );
+    onSuccess: () => {
+      toast.success("password reset successfully Please Sign in to continue");
       resetPasswordForm.reset();
       router.replace("/auth/sign-in");
     },
@@ -133,8 +124,7 @@ const ResetPasswordForm = () => {
       <CardHeader>
         <CardTitle className="text-xl font-bold">Reset Your Password</CardTitle>
         <CardDescription>
-          Create a new password for your account. Make sure it’s strong and
-          secure.
+          Create a new password for your account. Make sure it’s strong and secure.
         </CardDescription>
       </CardHeader>
       <CardContent>

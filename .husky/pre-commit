@@ -1,0 +1,21 @@
+#!/bin/sh
+
+echo "Running pre-commit checks..."
+
+# Run lint-staged: ESLint fix + Prettier format on staged files
+npx lint-staged
+
+# TypeScript check — show errors and fail on them, warnings are printed but do not block
+echo ""
+echo "Running TypeScript type check..."
+npx tsc --noEmit
+TS_EXIT=$?
+
+if [ $TS_EXIT -ne 0 ]; then
+  echo ""
+  echo "TypeScript errors found. Fix them before committing."
+  exit 1
+fi
+
+echo ""
+echo "All pre-commit checks passed."

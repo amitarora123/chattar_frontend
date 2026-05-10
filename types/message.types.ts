@@ -1,4 +1,4 @@
-import { ChatMember } from "./chat.types";
+import { ChatParticipant } from "./chat.types";
 
 export interface MessageAttachment {
   file_url: string;
@@ -8,8 +8,8 @@ export interface MessageAttachment {
 
 export interface Message {
   _id: string;
-  chat: string;
-  sender: ChatMember;
+  chat_id: string;
+  sender: ChatParticipant;
   content: string;
   type: string;
   createdAt: string;

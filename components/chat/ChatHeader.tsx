@@ -1,6 +1,6 @@
-import { clearChat, getChatById } from "@/lib/api/chat.api";
+import { clearChat } from "@/lib/api/chat.api";
 import { useChatStore } from "@/lib/store/chatStore";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { User, X } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "../ui/separator";
@@ -11,38 +11,31 @@ import ChatClear from "./ChatClear";
 import { useAuth } from "@/lib/providers/AuthProvider";
 
 const ChatHeader = () => {
-  const { selectedChatId, setSelectedChatId } = useChatStore();
-
+  const { selectedChat, selectChat } = useChatStore();
   const { user } = useAuth();
   const userId = user?._id;
+
   const queryClient = useQueryClient();
 
-  const { data: chat } = useQuery({
-    queryKey: ["chat", selectedChatId],
-    queryFn: async () => await getChatById(selectedChatId!),
-    enabled: !!selectedChatId,
-  });
-
   const { mutate: clearChatMutate } = useMutation({
-    mutationKey: ["clear-chat", selectedChatId],
+    mutationKey: ["clear-chat", selectedChat!._id],
     mutationFn: clearChat,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["chat-messages", selectedChatId],
+        queryKey: ["chat-messages", selectedChat!._id],
       });
       queryClient.invalidateQueries({ queryKey: ["chats"] });
     },
   });
 
   const handleClearChat = () => {
-    if (!selectedChatId) return;
-    clearChatMutate(selectedChatId);
+    clearChatMutate(selectedChat!._id);
   };
 
   useEffect(() => {
-    if (!selectedChatId || !userId) return;
+    if (!selectedChat) return;
 
-    const room = `chat:${selectedChatId}`;
+    const room = `chat:${selectedChat._id}`;
     const joinRoom = () => socket.emit("chat:join", room);
 
     if (socket.connected) joinRoom();
@@ -51,16 +44,19 @@ const ChatHeader = () => {
     return () => {
       socket.off("connect", joinRoom);
     };
-  }, [selectedChatId, userId]);
+  }, [selectedChat, userId]);
 
-  if (!chat) return null;
+  if (!selectedChat) return null;
 
-  const recipient = chat.members.find((m) => m._id !== userId);
-
-  const avatar_url = chat.isGroup ? "" : recipient?.avatar || "";
-  const displayName = chat.name;
-  const participantsName = chat.isGroup
-    ? chat.members.map((m) => m.name || m.username)
+  const recipient = selectedChat.participants.find((p) => p.user._id !== userId);
+  const avatar_url = selectedChat.is_group
+    ? selectedChat.groupMetaData?.avatar_url
+    : recipient?.user.avatar_url || "";
+  const displayName = selectedChat.is_group
+    ? selectedChat.groupMetaData!.name
+    : recipient?.contactName || recipient?.user.display_name || recipient?.user.username;
+  const participantsName = selectedChat.is_group
+    ? selectedChat.participants.map((p) => p.contactName || p.user.display_name || p.user.username)
     : [];
 
   return (
@@ -68,7 +64,7 @@ const ChatHeader = () => {
       <header className="px-4 py-3  ">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
-            {avatar_url.length > 0 ? (
+            {avatar_url ? (
               <Image
                 src={avatar_url}
                 width={40}
@@ -81,17 +77,12 @@ const ChatHeader = () => {
             )}
             <p>{displayName}</p>
             {participantsName.length > 0 && (
-              <p className="text-slate-400 text-sm">
-                ({participantsName.join(", ")})
-              </p>
+              <p className="text-slate-400 text-sm">({participantsName.join(", ")})</p>
             )}
           </div>
           <div className="flex items-center gap-2">
             <ChatClear onConfirm={handleClearChat} />
-            <Button
-              onClick={() => setSelectedChatId(null)}
-              variant="outline"
-            >
+            <Button onClick={() => selectChat(null)} variant="outline">
               <X />
             </Button>
           </div>

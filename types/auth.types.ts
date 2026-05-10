@@ -47,5 +47,9 @@ export interface ResendOtpResponse {
 
 export interface RefreshAccessToken {
   accessToken: string;
-  refreshToken?: string;
+  refreshToken: string;
+  _id: string;
+  username: string;
+  email: string;
+  avatar_url?: string;
 }

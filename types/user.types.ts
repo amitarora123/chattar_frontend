@@ -5,8 +5,10 @@ export interface User {
   email: string;
   avatar_url?: string;
   last_seen?: Date;
-  otp?: {
-    resendAvailableAt: string;
-  };
-  is_active: boolean;
+}
+
+export interface UpdateMeProps {
+  name?: string;
+  avatar_url?: string;
+  is_active?: boolean;
 }

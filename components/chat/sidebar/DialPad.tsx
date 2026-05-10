@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { ArrowLeft, User } from "lucide-react";
 import { useSidebarStore } from "@/lib/store/sidebarStore";
@@ -6,10 +6,12 @@ import { useState } from "react";
 import { searchUsers } from "@/lib/api/user.api";
 import useDebounce from "@/hooks/useDebounce";
 import { useChatStore } from "@/lib/store/chatStore";
+import { createDirectChat } from "@/lib/api/chat.api";
 
 const DialPad = () => {
   const { changeSidebar } = useSidebarStore();
-  const { setSelectedChatId, setSelectedRecipientId } = useChatStore();
+  const { selectChat } = useChatStore();
+  const queryClient = useQueryClient();
 
   const [username, setUsername] = useState("");
 
@@ -19,6 +21,15 @@ const DialPad = () => {
     queryKey: ["chats", debouncedUsername],
     queryFn: async () => await searchUsers({ username: debouncedUsername }),
     enabled: debouncedUsername.length > 3,
+  });
+
+  const { mutate: startChat } = useMutation({
+    mutationFn: createDirectChat,
+    onSuccess: (chat) => {
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
+      selectChat(chat);
+      changeSidebar("AllChats");
+    },
   });
 
   return (
@@ -62,8 +73,7 @@ const DialPad = () => {
             <li
               key={user.user._id}
               onClick={() => {
-                setSelectedChatId(null);
-                setSelectedRecipientId(user.user._id);
+                startChat(user.user._id);
               }}
               className="p-3 hover:bg-neutral-800 cursor-pointer rounded-lg mt-2 flex gap-4 transition-colors"
             >

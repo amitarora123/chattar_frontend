@@ -1,35 +1,27 @@
-export interface ChatMember {
-  _id: string;
-  username: string;
-  email: string;
+import { Message } from "./message.types";
+
+export interface GroupMetaData {
   name: string;
-  avatar?: string;
-  isVerified: boolean;
-  createdAt: string;
-  updatedAt: string;
+  description?: string;
+  avatar_url?: string;
+  created_by: ChatParticipant;
 }
 
-export interface ChatLastMessage {
-  _id: string;
-  chat: string;
-  sender: ChatMember;
-  content: string;
-  type: string;
-  createdAt: string;
-  updatedAt: string;
+export interface GroupRole {
+  name: "Admin" | "Member";
+  assigned_by: string;
 }
 
 export interface Chat {
   _id: string;
-  name: string;
-  isGroup: boolean;
-  members: ChatMember[];
-  lastMessage?: ChatLastMessage;
+  is_group: boolean;
+  participants: ChatParticipant[];
+  last_message?: Message | null;
+  groupMetaData?: GroupMetaData;
   createdAt: string;
   updatedAt: string;
 }
 
-// Used by GET /chats/recipient/:id
 export interface ChatParticipant {
   user: {
     _id: string;
@@ -37,8 +29,8 @@ export interface ChatParticipant {
     display_name: string;
     avatar_url?: string | null;
     last_seen: string;
-    is_active: boolean;
   };
+  groupRole?: GroupRole | null;
   isContact: boolean;
   contactName: string | null;
 }

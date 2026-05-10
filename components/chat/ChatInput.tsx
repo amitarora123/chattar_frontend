@@ -1,11 +1,11 @@
 import { Plus, Send } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { sendMessage } from "@/lib/api/message.api";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState, useRef } from "react";
 import { socket } from "@/lib/socket/socketClient";
 import { useAuth } from "@/lib/providers/AuthProvider";
+import { Message } from "@/types/message.types";
 
 interface ChatInputProps {
   chatId: string;
@@ -20,17 +20,33 @@ const ChatInput = ({ chatId }: ChatInputProps) => {
 
   const queryClient = useQueryClient();
 
-  const { mutate: sendMessageMutation } = useMutation({
-    mutationFn: sendMessage,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["chats"] });
-    },
-  });
+  const stopTyping = () => {
+    if (!userId || !isTyping) return;
+    clearTimeout(typingTimeout.current ?? undefined);
+    socket.emit("typing:stop", { room: `chat:${chatId}`, userId });
+    setIsTyping(false);
+  };
 
   const handleSendMessage = () => {
-    if (!value.trim()) return;
-    sendMessageMutation({ content: value, chat_id: chatId });
+    if (!value.trim() || !userId) return;
+
+    stopTyping();
+
+    const room = `chat:${chatId}`;
+    const content = value;
     setValue("");
+
+    socket.emit(
+      "message:send",
+      { room, chat_id: chatId, content },
+      (response: { error?: string; data?: Message }) => {
+        if (response.error || !response.data) return;
+        queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
+          old ? [...old, response.data!] : [response.data!]
+        );
+        queryClient.invalidateQueries({ queryKey: ["chats"] });
+      }
+    );
   };
 
   const handleTyping = (text: string) => {
@@ -39,6 +55,11 @@ const ChatInput = ({ chatId }: ChatInputProps) => {
     if (!userId) return;
 
     const room = `chat:${chatId}`;
+
+    if (!text) {
+      stopTyping();
+      return;
+    }
 
     if (!isTyping) {
       socket.emit("typing:start", { room, userId });
@@ -66,11 +87,7 @@ const ChatInput = ({ chatId }: ChatInputProps) => {
       />
       {value.length > 0 ? (
         <div className="absolute right-1 top-0  items-center h-full flex ">
-          <Button
-            onClick={() => handleSendMessage()}
-            variant="outline"
-            className="  rounded-full"
-          >
+          <Button onClick={() => handleSendMessage()} variant="outline" className="  rounded-full">
             {" "}
             <Send />{" "}
           </Button>

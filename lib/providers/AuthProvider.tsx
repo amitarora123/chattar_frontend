@@ -1,15 +1,15 @@
 "use client";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import React, {
   createContext,
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
 import { logout, refreshAccessToken } from "../api/auth.api";
-import { getMe } from "../api/user.api";
 import { useRouter } from "next/navigation";
 import { apiClient } from "../apiClient/apiClient";
 import { clearRefreshToken, getRefreshToken, setRefreshToken } from "../auth/session";
@@ -30,12 +30,21 @@ export const useAuth = (): AuthContextValue => {
 };
 
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
   const tokenRef = useRef<string | null>(null);
   const isRefreshing = useRef(false);
   const failedQueue = useRef<
     { resolve: (token: string) => void; reject: (err: unknown) => void }[]
   >([]);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Blocks all non-auth requests until the initial token refresh completes
+  const initPromiseRef = useRef<Promise<void> | undefined>(undefined);
+  const resolveInitRef = useRef<(() => void) | undefined>(undefined);
+  if (!initPromiseRef.current) {
+    initPromiseRef.current = new Promise<void>((resolve) => {
+      resolveInitRef.current = resolve;
+    });
+  }
 
   const router = useRouter();
 
@@ -48,11 +57,15 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     mutationKey: ["refresh-access-token"],
     mutationFn: (token: string) => refreshAccessToken(token),
     onSuccess: (data) => {
-      tokenRef.current = data.accessToken;
-      if (data.refreshToken) setRefreshToken(data.refreshToken);
-      setIsAuthenticated(true);
+      const { accessToken, refreshToken, ...userData } = data;
+
+      tokenRef.current = accessToken;
+      if (data.refreshToken) setRefreshToken(refreshToken);
+      setUser(userData);
+      resolveInitRef.current?.();
     },
     onError: async () => {
+      resolveInitRef.current?.();
       clearTokens();
       await logoutMutation.mutateAsync();
       router.replace("/auth/sign-in");
@@ -61,25 +74,13 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const { mutate: triggerRefresh } = refreshAccessTokenMutation;
 
-  const { data: user = null } = useQuery({
-    queryKey: ["me"],
-    queryFn: getMe,
-    enabled: isAuthenticated,
-    staleTime: Infinity,
-  });
-
-  const setTokens = useCallback(
-    (accessToken: string, refreshToken: string): void => {
-      tokenRef.current = accessToken;
-      setRefreshToken(refreshToken);
-      setIsAuthenticated(true);
-    },
-    [],
-  );
+  const setTokens = useCallback((accessToken: string, refreshToken: string): void => {
+    tokenRef.current = accessToken;
+    setRefreshToken(refreshToken);
+  }, []);
 
   const clearTokens = useCallback((): void => {
     tokenRef.current = null;
-    setIsAuthenticated(false);
     clearRefreshToken();
   }, []);
 
@@ -95,15 +96,15 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Attach request interceptor — injects Bearer token
-  useEffect(() => {
-    const requestInterceptor = apiClient.interceptors.request.use(
-      async (config) => {
-        if (tokenRef.current) {
-          config.headers.Authorization = `Bearer ${tokenRef.current}`;
-        }
-        return config;
-      },
-    );
+  useLayoutEffect(() => {
+    const requestInterceptor = apiClient.interceptors.request.use(async (config) => {
+      const isAuthRoute = config.url?.includes("/auth/");
+      if (!isAuthRoute) await initPromiseRef.current;
+      if (tokenRef.current) {
+        config.headers.Authorization = `Bearer ${tokenRef.current}`;
+      }
+      return config;
+    });
 
     return () => {
       apiClient.interceptors.request.eject(requestInterceptor);
@@ -166,7 +167,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } finally {
           isRefreshing.current = false;
         }
-      },
+      }
     );
 
     return () => {
@@ -185,9 +186,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [triggerRefresh, router]);
 
   return (
-    <AuthContext.Provider value={{ user, setTokens, clearTokens }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={{ user, setTokens, clearTokens }}>{children}</AuthContext.Provider>
   );
 };
 

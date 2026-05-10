@@ -1,24 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { useMutation } from "@tanstack/react-query";
-import { resendVerificationOtp, verifyUser } from "@/lib/api/user.api";
+import { resendOtp, verifyUser } from "@/lib/api/auth.api";
 import { useRouter } from "next/navigation";
 import OtpInput from "../form/OtpInput";
 import { useTimer } from "@/hooks/useTimer";
-import {
-  getSecondsLeft,
-  showErrorMessage,
-  showSuccessMessage,
-} from "@/lib/utils";
+import { getSecondsLeft, showErrorMessage, showSuccessMessage } from "@/lib/utils";
 
 const OTP_LENGTH = 6;
 
@@ -30,9 +19,9 @@ const VerificationForm = () => {
 
   const { secondsLeft, setSecondsLeft } = useTimer();
 
-  const { mutate: resendOtp } = useMutation({
+  const resendOtpMutation = useMutation({
     mutationKey: ["resend-otp", email],
-    mutationFn: async (email: string) => await resendVerificationOtp(email),
+    mutationFn: resendOtp,
     onError: (error) => {
       showErrorMessage(error);
     },
@@ -50,10 +39,9 @@ const VerificationForm = () => {
     onError: (error) => {
       showErrorMessage(error);
     },
-    onSuccess: async (data) => {
-      const { message } = data as { message: string };
-      showSuccessMessage(message);
-      router.replace("/chats");
+    onSuccess: async () => {
+      showSuccessMessage("User Verified successfully");
+      router.replace("/sign-in");
     },
   });
 
@@ -109,7 +97,7 @@ const VerificationForm = () => {
           <button
             className={`text-blue-400  font-semibold  ${secondsLeft > 0 ? "cursor-not-allowed text-white" : "cursor-pointer hover:underline"}`}
             onClick={() => {
-              resendOtp(email);
+              resendOtpMutation.mutate(email);
             }}
             disabled={secondsLeft > 0}
             aria-disabled={secondsLeft > 0}

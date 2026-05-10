@@ -5,12 +5,12 @@ import { useChatStore } from "@/lib/store/chatStore";
 import Sidebar from "@/components/chat/sidebar/Sidebar";
 const ChatsPage = () => {
   const { sidebar, mountedSidebars } = useSidebarStore();
-  const { selectedChatId, selectedRecipientId } = useChatStore();
+  const { selectedChat } = useChatStore();
 
-  const isChatOpen = !!selectedChatId || !!selectedRecipientId;
+  const isChatOpen = !!selectedChat;
 
   return (
-    <main className="h-full grid lg:grid-cols-4 grid-cols-1 overflow-hidden flex-1">
+    <main className="grid lg:grid-cols-4 grid-cols-1 overflow-hidden flex-1">
       {/* Sidebar */}
       <div
         className={`
@@ -72,9 +72,7 @@ const ChatsPage = () => {
 
       {/* Chat Container */}
 
-      {isChatOpen && (
-        <ChatContainer className="z-50 bg-background lg:col-span-3" />
-      )}
+      {isChatOpen && <ChatContainer className="z-50 bg-background lg:col-span-3" />}
     </main>
   );
 };

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+echo "Running pre-push build check..."
+
+npm run build
+BUILD_EXIT=$?
+
+if [ $BUILD_EXIT -ne 0 ]; then
+  echo ""
+  echo "Build failed. Fix errors before pushing."
+  exit 1
+fi
+
+echo ""
+echo "Build passed. Proceeding with push."

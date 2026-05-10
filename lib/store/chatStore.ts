@@ -1,21 +1,22 @@
-import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { Chat } from "@/types/chat.types";
+import { create } from "zustand";
+import { devtools, persist } from "zustand/middleware";
 
 interface ChatStore {
-  selectedChatId: string | null;
-  setSelectedChatId: (chatId: string | null) => void;
+  selectedChat: Chat | null;
+  selectChat: (chat: Chat | null) => void;
 }
 
 export const useChatStore = create<ChatStore>()(
   devtools(
     persist(
       (set) => ({
-        selectedChatId: null as string | null,
-        setSelectedChatId: (chatId: string | null) => {
-          set({ selectedChatId: chatId });
+        selectedChat: null,
+        selectChat: (chat: Chat | null) => {
+          set({ selectedChat: chat });
         },
       }),
-      { name: 'ChatStore' },
-    ),
-  ),
+      { name: "ChatStore" }
+    )
+  )
 );

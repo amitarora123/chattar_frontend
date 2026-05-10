@@ -2,14 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,12 +11,12 @@ import { Button } from "../ui/button";
 import Link from "next/link";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { SignUpProps } from "@/types/auth.types";
-import { checkUsernameUniqueness, signUp } from "@/lib/api/user.api";
-import { AxiosError } from "axios";
+import { checkUsernameUniqueness } from "@/lib/api/user.api";
 import { Check, Loader2, X } from "lucide-react";
 import useDebounce from "@/hooks/useDebounce";
 import GoogleLoginButton from "./GoogleLogin";
 import { showErrorMessage, showSuccessMessage } from "@/lib/utils";
+import { signUp } from "@/lib/api/auth.api";
 
 const signUpSchema = z
   .object({
@@ -121,10 +114,7 @@ const SignUpForm = () => {
     mutationKey: ["sign-up"],
     onSuccess: (data) => {
       showSuccessMessage("Sign Up Successful\nPlease verify to continue");
-      sessionStorage.setItem(
-        "verification-email",
-        signUpForm.getValues("email"),
-      );
+      sessionStorage.setItem("verification-email", signUpForm.getValues("email"));
       signUpForm.reset();
       router.replace(`/auth/verify/${data._id}`);
     },
@@ -214,10 +204,7 @@ const SignUpForm = () => {
           <GoogleLoginButton />
           <p className="font-bold text-sm">
             Don&apos;t have an account?{" "}
-            <Link
-              href="/auth/sign-in"
-              className="text-blue-400 hover:underline"
-            >
+            <Link href="/auth/sign-in" className="text-blue-400 hover:underline">
               Sign In
             </Link>
           </p>
