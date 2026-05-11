@@ -11,9 +11,11 @@ export interface Message {
   chat_id: string;
   sender: ChatParticipant;
   content: string;
-  type: string;
+  attachment?: MessageAttachment;
   createdAt: string;
   updatedAt: string;
+  is_edited: boolean;
+  is_deleted: boolean;
 }
 
 export interface SendMessageProps {

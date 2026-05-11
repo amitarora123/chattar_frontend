@@ -10,10 +10,23 @@ interface ChatBubbleProps {
   isGroup?: boolean;
 }
 
+const formatFileSize = (fileSize: number) => {
+  const fileSizeInKb = fileSize / 1024;
+
+  // Less than 1 MB -> show in KB
+  if (fileSizeInKb < 1024) {
+    return `${fileSizeInKb.toFixed(2)} KB`;
+  }
+
+  // 1 MB or more -> show in MB
+  const fileSizeInMb = fileSizeInKb / 1024;
+  return `${fileSizeInMb.toFixed(2)} MB`;
+};
+
 const ChatBubble = ({
   userId,
   isGroup,
-  message: { sender, content, createdAt },
+  message: { sender, content, createdAt, attachment },
 }: ChatBubbleProps) => {
   const isMyMessage = sender.user._id === userId;
 
@@ -52,6 +65,20 @@ const ChatBubble = ({
           isMyMessage ? "border-white/[0.06]" : "border-white/[0.04]"
         )}
       >
+        {attachment && (
+          <div>
+            <p className="text-slate-400 text-xs text-end mb-2">
+              {formatFileSize(attachment.file_size)}
+            </p>
+            <Image
+              src={attachment.file_url}
+              width={200}
+              height={150}
+              alt={attachment.file_url}
+              className="w-40 h-40 object-contain"
+            />
+          </div>
+        )}
         {/* Sender name (group, other people only) */}
         {isGroup && !isMyMessage && (
           <p className="text-[11px] font-medium text-slate-400 mb-1 tracking-wide">

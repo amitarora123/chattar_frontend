@@ -7,7 +7,6 @@ const ChatsPage = () => {
   const { sidebar, mountedSidebars } = useSidebarStore();
   const { selectedChat } = useChatStore();
 
-  console.log(sidebar);
   const isChatOpen = !!selectedChat;
 
   return (
