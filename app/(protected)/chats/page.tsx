@@ -15,10 +15,10 @@ const ChatsPage = () => {
       <div
         className={`
     relative col-span-1 overflow-hidden h-full
-    ${isChatOpen && sidebar === "AllChats" ? "hidden lg:block" : "block"}
+    ${isChatOpen && sidebar === "ChatList" ? "hidden lg:block" : "block"}
   `}
       >
-        <Sidebar type="AllChats" className="h-full" />
+        <Sidebar type="ChatList" className="h-full" />
 
         {mountedSidebars.has("NewChat") && (
           <Sidebar

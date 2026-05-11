@@ -28,7 +28,7 @@ const DialPad = () => {
     onSuccess: (chat) => {
       queryClient.invalidateQueries({ queryKey: ["chats"] });
       selectChat(chat);
-      changeSidebar("AllChats");
+      changeSidebar("ChatList");
     },
   });
 

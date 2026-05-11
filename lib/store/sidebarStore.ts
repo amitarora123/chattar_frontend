@@ -1,12 +1,12 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 export type SidebarType =
-  | 'DialPad'
-  | 'NewChat'
-  | 'NewContact'
-  | 'NewGroup'
-  | 'AllChats'
-  | 'AddGroupMembers';
+  | "DialPad"
+  | "NewChat"
+  | "NewContact"
+  | "NewGroup"
+  | "ChatList"
+  | "AddGroupMembers";
 
 interface SidebarState {
   sidebar: SidebarType;
@@ -15,7 +15,7 @@ interface SidebarState {
 }
 
 export const useSidebarStore = create<SidebarState>((set) => ({
-  sidebar: 'AllChats',
+  sidebar: "ChatList",
   mountedSidebars: new Set<SidebarType>(),
   changeSidebar: (val) => {
     set((state) => ({

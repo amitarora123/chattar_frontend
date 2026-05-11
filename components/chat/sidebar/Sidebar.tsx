@@ -1,5 +1,5 @@
 import { SidebarType } from "@/lib/store/sidebarStore";
-import AllChats from "./ChatList";
+import ChatList from "./ChatList";
 import NewChat from "./NewChat";
 import NewContact from "./NewContact";
 import AddGroupMembers from "./AddGroupMembers";
@@ -14,7 +14,7 @@ interface SidebarProps {
 
 const Sidebar = ({ className, type }: SidebarProps) => {
   const SIDEBAR_COMPONENTS: Record<SidebarType, React.ComponentType> = {
-    AllChats,
+    ChatList,
     NewChat,
     NewContact,
     AddGroupMembers,

@@ -35,7 +35,7 @@ const NewGroup = () => {
       queryClient.invalidateQueries({
         queryKey: ["chats"],
       });
-      changeSidebar("AllChats"); // go back to chats
+      changeSidebar("ChatList"); // go back to chats
     },
     onError: (error) => {
       console.log(error);
@@ -85,12 +85,7 @@ const NewGroup = () => {
             )}
           </div>
           <Camera className="absolute bottom-2 right-1 text-blue-200" />
-          <input
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={handleAvatarChange}
-          />
+          <input type="file" accept="image/*" hidden onChange={handleAvatarChange} />
         </label>
 
         {/* Group Name */}

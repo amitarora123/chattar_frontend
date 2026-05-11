@@ -7,9 +7,12 @@ import { socket } from "@/lib/socket/socketClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { Message } from "@/types/message.types";
 import Image from "next/image";
-import { User } from "lucide-react";
 import TypingIndicator from "./TypingIndicator";
 import { useAuth } from "@/lib/providers/AuthProvider";
+import { User } from "lucide-react";
+import MessageSkeleton from "../skelton/MessageSkelton";
+
+// MessageSkeleton.tsx
 
 const MessageContainer = () => {
   const userId = useAuth().user?._id;
@@ -21,7 +24,7 @@ const MessageContainer = () => {
 
   const queryClient = useQueryClient();
 
-  const { data: messages } = useQuery({
+  const { data: messages, isLoading } = useQuery({
     queryKey: ["chat-messages", selectedChatId],
     queryFn: () => getChatMessages(selectedChatId!),
     enabled: !!selectedChatId,
@@ -75,8 +78,20 @@ const MessageContainer = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages?.length]);
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 space-y-6 px-5 py-4">
+        <MessageSkeleton type="left" />
+        <MessageSkeleton type="right" />
+        <MessageSkeleton type="right" />
+        <MessageSkeleton type="left" />
+        <MessageSkeleton type="right" />
+      </div>
+    );
+  }
   return (
-    <div className=" overflow-y-auto gap-3  px-5 hide-scrollbar ">
+    <div className=" overflow-y-auto gap-3 flex-1  px-5 hide-scrollbar ">
       {messages?.map((message) => (
         <ChatBubble
           isGroup={!!selectedChat?.is_group}

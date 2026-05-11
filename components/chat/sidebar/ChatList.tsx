@@ -16,6 +16,7 @@ import { socket } from "@/lib/socket/socketClient";
 import { useAuth } from "@/lib/providers/AuthProvider";
 import { Chat } from "@/types/chat.types";
 import { User as AuthUser } from "@/types/user.types";
+import ChatSkelton from "@/components/skelton/ChatSkelton";
 
 const ChatListItem = ({
   chat,
@@ -43,7 +44,7 @@ const ChatListItem = ({
     <li
       key={chat._id}
       onClick={() => selectChat(chat)}
-      className="p-3 hover:bg-neutral-800 cursor-pointer rounded-lg mt-2 flex gap-4 transition-colors"
+      className="p-3 hover:bg-slate-900/80 cursor-pointer rounded-lg mt-2 flex gap-4 transition-colors"
     >
       {/* Avatar */}
       <div className="relative w-10 h-10 shrink-0 flex items-center justify-center">
@@ -103,7 +104,7 @@ const ChatList = () => {
   const { changeSidebar } = useSidebarStore();
   const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
 
-  const { data: chats } = useQuery({
+  const { data: chats, isLoading } = useQuery({
     queryKey: ["chats"],
     queryFn: getMyChats,
   });
@@ -188,16 +189,28 @@ const ChatList = () => {
 
         {/* Chat List */}
         <div className="flex-1 min-h-0">
-          <ul className="overflow-y-auto hide-scrollbar h-full pb-5">
-            {chats?.map((chat) => (
-              <ChatListItem
-                key={chat._id}
-                chat={chat}
-                authUser={user}
-                onlineUserIds={onlineUserIds}
-              />
-            ))}
-          </ul>
+          {isLoading ? (
+            <div>
+              <ChatSkelton />
+              <ChatSkelton />
+              <ChatSkelton />
+              <ChatSkelton />
+              <ChatSkelton />
+            </div>
+          ) : chats?.length ? (
+            <ul className="overflow-y-auto hide-scrollbar h-full pb-5">
+              {chats.map((chat) => (
+                <ChatListItem
+                  key={chat._id}
+                  chat={chat}
+                  authUser={user}
+                  onlineUserIds={onlineUserIds}
+                />
+              ))}
+            </ul>
+          ) : (
+            <p className="text-slate-400">No Chats Found</p>
+          )}
         </div>
       </div>
       <MobileBottomNav />

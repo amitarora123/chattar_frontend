@@ -23,7 +23,7 @@ const NewChat = () => {
     onSuccess: (chat) => {
       queryClient.invalidateQueries({ queryKey: ["chats"] });
       selectChat(chat);
-      changeSidebar("AllChats");
+      changeSidebar("ChatList");
     },
   });
 
@@ -34,7 +34,7 @@ const NewChat = () => {
         <div className="flex gap-3 items-center">
           <button
             className="rounded-full p-2 transition-colors cursor-pointer duration-200 hover:bg-neutral-800"
-            onClick={() => changeSidebar("AllChats")}
+            onClick={() => changeSidebar("ChatList")}
           >
             <ArrowLeft size={20} />
           </button>

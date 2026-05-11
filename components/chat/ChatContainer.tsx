@@ -15,7 +15,6 @@ const ChatContainer = ({ className }: ChatContainerProps) => {
     <section className={clsx(className, "w-full flex overflow-hidden flex-col  relative")}>
       <ChatHeader />
       <MessageContainer />
-
       <div className="h-fit py-5 px-5">
         {selectedChat && <ChatInput chatId={selectedChat._id} />}
       </div>
