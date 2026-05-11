@@ -91,7 +91,7 @@ const MessageContainer = () => {
     );
   }
   return (
-    <div className=" overflow-y-auto gap-3 flex-1  px-5 hide-scrollbar ">
+    <div className=" overflow-y-auto gap-3 min-h-0 flex-1  px-5 hide-scrollbar ">
       {messages?.map((message) => (
         <ChatBubble
           isGroup={!!selectedChat?.is_group}

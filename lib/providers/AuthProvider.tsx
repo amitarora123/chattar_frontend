@@ -17,6 +17,7 @@ import { User } from "@/types/user.types";
 
 interface AuthContextValue {
   user: User | null;
+  isLoading: boolean;
   setTokens: (accessToken: string, refreshToken: string) => void;
   clearTokens: () => void;
 }
@@ -31,6 +32,7 @@ export const useAuth = (): AuthContextValue => {
 
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const tokenRef = useRef<string | null>(null);
   const isRefreshing = useRef(false);
   const failedQueue = useRef<
@@ -62,9 +64,11 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       tokenRef.current = accessToken;
       if (data.refreshToken) setRefreshToken(refreshToken);
       setUser(userData);
+      setIsLoading(false);
       resolveInitRef.current?.();
     },
     onError: async () => {
+      setIsLoading(false);
       resolveInitRef.current?.();
       clearTokens();
       await logoutMutation.mutateAsync();
@@ -179,6 +183,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const token = getRefreshToken();
     if (!token) {
+      setIsLoading(false);
       router.replace("/auth/sign-in");
       return;
     }
@@ -186,7 +191,9 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [triggerRefresh, router]);
 
   return (
-    <AuthContext.Provider value={{ user, setTokens, clearTokens }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, isLoading, setTokens, clearTokens }}>
+      {children}
+    </AuthContext.Provider>
   );
 };
 

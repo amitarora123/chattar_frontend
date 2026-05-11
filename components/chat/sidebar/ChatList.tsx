@@ -100,7 +100,7 @@ const ChatListItem = ({
 };
 
 const ChatList = () => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { changeSidebar } = useSidebarStore();
   const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
 
@@ -130,6 +130,18 @@ const ChatList = () => {
       socket.off("user:offline");
     };
   }, []);
+
+  if (authLoading) {
+    return (
+      <div>
+        <ChatSkelton />
+        <ChatSkelton />
+        <ChatSkelton />
+        <ChatSkelton />
+        <ChatSkelton />
+      </div>
+    );
+  }
 
   if (!user) return null;
 

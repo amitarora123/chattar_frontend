@@ -12,7 +12,7 @@ const ChatContainer = ({ className }: ChatContainerProps) => {
   const { selectedChat } = useChatStore();
 
   return (
-    <section className={clsx(className, "w-full flex overflow-hidden flex-col  relative")}>
+    <section className={clsx(className, "w-full h-full flex overflow-hidden flex-col  relative")}>
       <ChatHeader />
       <MessageContainer />
       <div className="h-fit py-5 px-5">

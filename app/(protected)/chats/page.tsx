@@ -7,10 +7,11 @@ const ChatsPage = () => {
   const { sidebar, mountedSidebars } = useSidebarStore();
   const { selectedChat } = useChatStore();
 
+  console.log(sidebar);
   const isChatOpen = !!selectedChat;
 
   return (
-    <main className="grid lg:grid-cols-4 grid-cols-1 overflow-hidden flex-1">
+    <main className="grid lg:grid-cols-4 grid-cols-1 overflow-hidden flex-1 h-full">
       {/* Sidebar */}
       <div
         className={`
@@ -72,7 +73,7 @@ const ChatsPage = () => {
 
       {/* Chat Container */}
 
-      {isChatOpen && <ChatContainer className="z-50 h-full bg-background lg:col-span-3" />}
+      {isChatOpen && <ChatContainer className="z-50 bg-background lg:col-span-3" />}
     </main>
   );
 };
