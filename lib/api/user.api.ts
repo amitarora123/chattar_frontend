@@ -34,7 +34,7 @@ export const searchUsers = async ({
 };
 
 export const updateMe = async ({ name, avatar_url, is_active }: UpdateMeProps) => {
-  const res = await apiClient.post("/user/me", {
+  const res = await apiClient.patch("/user/me", {
     name,
     avatar_url,
     is_active,

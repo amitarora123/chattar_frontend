@@ -1,5 +1,5 @@
 "use client";
-import AppSidebar from "@/components/ui/AppSidebar";
+import AppSidebar from "@/components/layout/AppSidebar";
 import React, { useEffect } from "react";
 import { socket } from "@/lib/socket/socketClient";
 import AuthProvider, { useAuth } from "@/lib/providers/AuthProvider";

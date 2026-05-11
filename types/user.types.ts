@@ -5,6 +5,7 @@ export interface User {
   email: string;
   avatar_url?: string;
   last_seen?: Date;
+  is_active?: boolean;
 }
 
 export interface UpdateMeProps {

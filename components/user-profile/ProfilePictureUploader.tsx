@@ -14,7 +14,7 @@ const ProfilePictureUploader = ({ preview, setFile }: Props) => {
     ref.current!.click();
   };
   return (
-    <div className="rounded-full w-[150] h-[150] border-2 relative border-primary">
+    <div className="rounded-full w-[150] h-[150] border-2 relative ">
       <input
         ref={ref}
         type="file"

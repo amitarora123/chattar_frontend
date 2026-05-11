@@ -7,6 +7,7 @@ export interface GetSignedUrlResponse {
   timestamp: number;
   cloud_name: string;
   api_key: string;
+  upload_preset: string;
 }
 
 export interface UploadImageResponse {

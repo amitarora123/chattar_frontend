@@ -2,19 +2,20 @@
 import { getMe, updateMe } from "@/lib/api/user.api";
 import { uploadImage } from "@/lib/api/cloudinary.api";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import ProfilePictureUploader from "./ProfilePictureUploader";
 import CustomFormField from "../form/CustomFormField";
 import z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "../ui/button";
-import { showErrorMessage } from "@/lib/utils";
+import { showErrorMessage, showSuccessMessage } from "@/lib/utils";
+import { Field, FieldLabel } from "../ui/field";
+import { Input } from "../ui/input";
 
 const profileSchema = z.object({
-  username: z.string().min(4, "Username must be at least 4 characters"),
-  display_name: z.string().optional(),
-  email: z.string().optional(),
+  display_name: z.string(),
+  is_active: z.enum(["ACTIVE", "INACTIVE"]),
 });
 
 type ProfileSchema = z.infer<typeof profileSchema>;
@@ -37,6 +38,10 @@ const ProfileForm = () => {
   const saveUserMutation = useMutation({
     mutationKey: ["profile-save"],
     mutationFn: updateMe,
+    onSuccess: (data) => {
+      const { message } = data as { message: string };
+      showSuccessMessage(message || "Profile Updated");
+    },
   });
 
   const preview = useMemo(() => {
@@ -47,10 +52,9 @@ const ProfileForm = () => {
   }, [file, userDetails]);
 
   const profileForm = useForm<ProfileSchema>({
-    defaultValues: {
-      email: "",
-      username: "",
-      display_name: "",
+    values: {
+      display_name: userDetails?.display_name ?? "",
+      is_active: userDetails?.is_active ? "ACTIVE" : "INACTIVE",
     },
     resolver: zodResolver(profileSchema),
   });
@@ -67,15 +71,9 @@ const ProfileForm = () => {
     saveUserMutation.mutate({
       name: data.display_name,
       avatar_url: avatarUrl,
-      is_active: true,
+      is_active: data.is_active === "ACTIVE",
     });
   };
-
-  useEffect(() => {
-    if (userDetails) {
-      profileForm.reset(userDetails);
-    }
-  }, [userDetails, profileForm]);
 
   if (isLoading) return null;
 
@@ -87,31 +85,39 @@ const ProfileForm = () => {
         className="flex flex-col gap-5 w-full"
         onSubmit={profileForm.handleSubmit(handleSaveProfile)}
       >
-        <div>
-          <CustomFormField
-            control={profileForm.control}
-            label="Username"
-            type="text"
-            name="username"
-            placeholder="Enter your username"
-            disabled
-          />
-        </div>
+        <Field>
+          <FieldLabel>Username</FieldLabel>
+          <Input type="text" disabled value={userDetails?.username} />
+        </Field>
 
-        <CustomFormField
-          control={profileForm.control}
-          label="Email"
-          type="email"
-          name="email"
-          placeholder="Enter your email"
-          disabled
-        />
+        <Field>
+          <FieldLabel>Email</FieldLabel>
+          <Input type="email" disabled value={userDetails?.email} />
+        </Field>
+
         <CustomFormField
           control={profileForm.control}
           label="Name"
           type="text"
           name="display_name"
           placeholder="Enter your name"
+        />
+
+        <CustomFormField
+          control={profileForm.control}
+          label="ACCOUNT STATUS"
+          name="is_active"
+          type="select"
+          options={[
+            {
+              label: "Active",
+              value: "ACTIVE",
+            },
+            {
+              label: "Inactive",
+              value: "INACTIVE",
+            },
+          ]}
         />
 
         <Button

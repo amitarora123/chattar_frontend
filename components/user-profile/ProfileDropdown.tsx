@@ -10,25 +10,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logout } from "@/lib/api/auth.api";
+import { useAuth } from "@/lib/providers/AuthProvider";
 import { useMutation } from "@tanstack/react-query";
 import { User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-const ProfileDropdown = ({
-  className = "",
-  size = 40,
-}: {
-  className?: string;
-  size?: number;
-}) => {
-  const user = {
-    avatar_url: null,
-    username: "amitarora123",
-  };
-
+const ProfileDropdown = ({ className = "", size = 40 }: { className?: string; size?: number }) => {
   const router = useRouter();
+
+  const { user } = useAuth();
 
   const logoutMutation = useMutation({
     mutationKey: ["logout"],
@@ -45,7 +37,7 @@ const ProfileDropdown = ({
     <div className={className}>
       <DropdownMenu>
         <DropdownMenuTrigger className="cursor-pointer" asChild>
-          {user.avatar_url ? (
+          {user?.avatar_url ? (
             <Image
               className="rounded-full"
               src={user.avatar_url}
