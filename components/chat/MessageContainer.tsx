@@ -33,6 +33,13 @@ const MessageContainer = () => {
     }
   }, []);
 
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView();
+    }
+  };
+
+  // useEffect to register socket events
   useEffect(() => {
     const handleNewMessage = (message: Message) => {
       queryClient.setQueryData(
@@ -42,35 +49,34 @@ const MessageContainer = () => {
           return [...oldMessages, message];
         }
       );
-      if (messagesEndRef.current) {
-        messagesEndRef.current.scrollIntoView();
-      }
     };
+
+    const handleTypingStart = ({ userId }: { userId: string }) => {
+      setTypingUsers((prev) => [...new Set([...prev, userId])]);
+    };
+
+    const handleTypingStop = ({ userId }: { userId: string }) => {
+      setTypingUsers((prev) => prev.filter((id) => id !== userId));
+    };
+
+    socket.on("typing:start", handleTypingStart);
+
+    socket.on("typing:stop", handleTypingStop);
 
     socket.on("message:new", handleNewMessage);
 
     return () => {
       socket.off("message:new", handleNewMessage);
+      socket.off("typing:start", handleTypingStart);
+      socket.off("typing:stop", handleTypingStop);
     };
   }, [queryClient, selectedChatId]);
 
   useEffect(() => {
-    socket.on("typing:start", ({ userId }) => {
-      setTypingUsers((prev) => [...new Set([...prev, userId])]);
-    });
-
-    socket.on("typing:stop", ({ userId }) => {
-      setTypingUsers((prev) => prev.filter((id) => id !== userId));
-    });
-
-    return () => {
-      socket.off("typing:start");
-      socket.off("typing:stop");
-    };
-  }, []);
-
+    scrollToBottom();
+  }, [messages?.length]);
   return (
-    <div className="flex-1 overflow-y-auto pt-10 pb-14 flex flex-col gap-3  px-5 hide-scrollbar ">
+    <div className=" overflow-y-auto gap-3  px-5 hide-scrollbar ">
       {messages?.map((message) => (
         <ChatBubble
           isGroup={!!selectedChat?.is_group}
@@ -111,7 +117,7 @@ const MessageContainer = () => {
           </div>
         );
       })}
-      <div ref={messagesEndRef} className="w-full h-5" />
+      <div ref={messagesEndRef} className="w-full h-1" />
     </div>
   );
 };

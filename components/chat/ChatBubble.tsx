@@ -18,8 +18,10 @@ const ChatBubble = ({
   const isMyMessage = sender.user._id === userId;
 
   return (
-    <div className={clsx("flex items-center", `${isMyMessage ? "justify-end" : "justify-start"}`)}>
-      <div className="flex items-start gap-2">
+    <div
+      className={clsx("flex my-3 items-center", `${isMyMessage ? "justify-end" : "justify-start"}`)}
+    >
+      <div className="flex items-start  gap-2">
         {isGroup && !isMyMessage ? (
           <div className="rounded-full">
             {sender.user.avatar_url ? (

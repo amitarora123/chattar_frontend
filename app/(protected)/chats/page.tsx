@@ -72,7 +72,7 @@ const ChatsPage = () => {
 
       {/* Chat Container */}
 
-      {isChatOpen && <ChatContainer className="z-50 bg-background lg:col-span-3" />}
+      {isChatOpen && <ChatContainer className="z-50 h-full bg-background lg:col-span-3" />}
     </main>
   );
 };
