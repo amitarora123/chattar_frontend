@@ -1,4 +1,4 @@
-import { Message, MessageAttachment } from "./message.types";
+import { Message, MessageAttachment, MessageSeen } from "./message.types";
 import { Server as IOServer } from "socket.io";
 
 export interface ServerToClientEvents {
@@ -8,6 +8,7 @@ export interface ServerToClientEvents {
   "typing:start": (data: { userId: string }) => void;
   "typing:stop": (data: { userId: string }) => void;
   "message:new": (message: Message) => void;
+  "message:new_seen": (data: { message_id: string; userId: string; seen_at: string }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -26,6 +27,11 @@ export interface ClientToServerEvents {
       reply_to?: string;
     },
     ack: (response: { error?: string; data?: Message }) => void
+  ) => void;
+
+  "message:seen": (
+    data: { room: string; userId: string; message_id: string },
+    ack: (response: { error?: string; data?: MessageSeen }) => void
   ) => void;
 }
 

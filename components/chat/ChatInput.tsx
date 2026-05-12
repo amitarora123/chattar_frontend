@@ -4,7 +4,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useRef, useEffect } from "react";
 import { socket } from "@/lib/socket/socketClient";
 import { useAuth } from "@/lib/providers/AuthProvider";
-import { Message, MessageAttachment } from "@/types/message.types";
+import { Chat } from "@/types/chat.types";
+import { Message } from "@/types/message.types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,7 +63,8 @@ const AttachmentDropdown = ({ setImage }: AttachmentDropdownProps) => {
 };
 
 const ChatInput = ({ chatId }: ChatInputProps) => {
-  const userId = useAuth().user?._id;
+  const user = useAuth().user;
+  const userId = user?._id;
 
   const [image, setImage] = useState<File | null>();
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
@@ -90,36 +92,149 @@ const ChatInput = ({ chatId }: ChatInputProps) => {
   const handleSendMessage = async () => {
     if ((!value.trim() && !image) || !userId) return;
 
-    let attachment: MessageAttachment | null = null;
+    if (!user) return;
+
+    const content = value.trim();
+    const tempId = `temp-${Date.now()}`;
+
     if (image) {
-      const { secure_url } = await uploadImageMutation.mutateAsync(image);
-
-      if (secure_url) {
-        attachment = {
-          file_url: secure_url,
-          file_size: image.size,
+      // Optimistic update: Add temp message with local image URL
+      const tempMessage: Message = {
+        _id: tempId,
+        chat_id: chatId,
+        sender: {
+          user: {
+            _id: user._id,
+            username: user.username,
+            display_name: user.username,
+            avatar_url: user.avatar_url,
+            last_seen: new Date().toISOString(),
+          },
+          isContact: true,
+          contactName: null,
+        },
+        seen: [],
+        content,
+        attachment: {
+          file_url: imagePreviewUrl,
           file_type: image.type,
-        };
-      }
+          file_size: image.size,
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        is_edited: false,
+        is_deleted: false,
+        isPending: true,
+      };
+
+      queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
+        old ? [...old, tempMessage] : [tempMessage]
+      );
+
+      // Clear UI immediately
+      setValue("");
+      setImage(null);
+      setImagePreviewUrl("");
+      stopTyping();
+
+      // Upload image and send message
+      uploadImageMutation.mutate(image, {
+        onSuccess: (data) => {
+          socket.emit(
+            "message:send",
+            {
+              room: `chat:${chatId}`,
+              chat_id: chatId,
+              content,
+              attachment: {
+                file_url: data.secure_url,
+                file_type: image.type,
+                file_size: image.size,
+              },
+            },
+            (response: { error?: string; data?: Message }) => {
+              if (response.error || !response.data) {
+                // Remove temp message on error
+                queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
+                  old ? old.filter((msg) => msg._id !== tempId) : []
+                );
+                return;
+              }
+              // Replace temp message with real message
+              queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
+                old
+                  ? old.map((msg) => (msg._id === tempId ? response.data! : msg))
+                  : [response.data!]
+              );
+              queryClient.setQueryData(["chats"], (old: Chat[] | undefined) =>
+                old?.map((c) => (c._id === chatId ? { ...c, last_message: response.data! } : c))
+              );
+            }
+          );
+        },
+        onError: (error) => {
+          // Remove temp message on upload failure
+          queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
+            old ? old.filter((msg) => msg._id !== tempId) : []
+          );
+          showErrorMessage(error);
+        },
+      });
+    } else {
+      // Optimistic update for text message
+      const tempMessage: Message = {
+        _id: tempId,
+        chat_id: chatId,
+        sender: {
+          user: {
+            _id: user._id,
+            username: user.username,
+            display_name: user.username,
+            avatar_url: user.avatar_url,
+            last_seen: new Date().toISOString(),
+          },
+          isContact: true,
+          contactName: null,
+        },
+        seen: [],
+        content,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        is_edited: false,
+        is_deleted: false,
+        isPending: true,
+      };
+
+      queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
+        old ? [...old, tempMessage] : [tempMessage]
+      );
+
+      // Clear UI immediately
+      setValue("");
+      stopTyping();
+
+      // Send message
+      socket.emit(
+        "message:send",
+        { room: `chat:${chatId}`, chat_id: chatId, content },
+        (response: { error?: string; data?: Message }) => {
+          if (response.error || !response.data) {
+            // Remove temp message on error
+            queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
+              old ? old.filter((msg) => msg._id !== tempId) : []
+            );
+            return;
+          }
+          // Replace temp message with real message
+          queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
+            old ? old.map((msg) => (msg._id === tempId ? response.data! : msg)) : [response.data!]
+          );
+          queryClient.setQueryData(["chats"], (old: Chat[] | undefined) =>
+            old?.map((c) => (c._id === chatId ? { ...c, last_message: response.data! } : c))
+          );
+        }
+      );
     }
-    stopTyping();
-
-    const room = `chat:${chatId}`;
-    const content = value;
-    if (value) setValue("");
-    if (image) setImage(null);
-
-    socket.emit(
-      "message:send",
-      { room, chat_id: chatId, content, attachment },
-      (response: { error?: string; data?: Message }) => {
-        if (response.error || !response.data) return;
-        queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
-          old ? [...old, response.data!] : [response.data!]
-        );
-        queryClient.invalidateQueries({ queryKey: ["chats"] });
-      }
-    );
   };
 
   const handleTyping = (text: string) => {

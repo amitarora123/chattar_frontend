@@ -16,6 +16,8 @@ export interface Message {
   updatedAt: string;
   is_edited: boolean;
   is_deleted: boolean;
+  isPending?: boolean;
+  seen: MessageSeen[];
 }
 
 export interface SendMessageProps {
@@ -23,4 +25,9 @@ export interface SendMessageProps {
   content: string;
   attachment?: MessageAttachment;
   reply_to?: string;
+}
+
+export interface MessageSeen {
+  participant_id: string;
+  viewed_at: string;
 }

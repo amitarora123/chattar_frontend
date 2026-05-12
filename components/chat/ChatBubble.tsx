@@ -1,13 +1,16 @@
+import { socket } from "@/lib/socket/socketClient";
 import { getMessageDateTimeStamp } from "@/lib/utils";
-import { Message } from "@/types/message.types";
+import { Message, MessageSeen } from "@/types/message.types";
 import clsx from "clsx";
-import { User } from "lucide-react";
+import { User, Loader2, Clock, CheckCheck, Check } from "lucide-react";
 import Image from "next/image";
+import { useEffect, useRef } from "react";
 
 interface ChatBubbleProps {
   message: Message;
   userId: string;
   isGroup?: boolean;
+  totalMembers: number;
 }
 
 const formatFileSize = (fileSize: number) => {
@@ -26,12 +29,60 @@ const formatFileSize = (fileSize: number) => {
 const ChatBubble = ({
   userId,
   isGroup,
-  message: { sender, content, createdAt, attachment },
+  message: { _id, sender, content, createdAt, attachment, isPending, chat_id, seen },
+  totalMembers,
 }: ChatBubbleProps) => {
   const isMyMessage = sender.user._id === userId;
+  const bubbleRef = useRef<HTMLDivElement>(null);
+
+  const isMessageSeen = seen.filter((s) => s.participant_id !== userId).length === totalMembers - 1;
+
+  useEffect(() => {
+    // Don't mark your own messages as seen
+
+    const handleMessageSeen = () => {
+      socket.emit(
+        "message:seen",
+        { room: `chat:${chat_id}`, userId, message_id: _id },
+        (response: { error?: string; data?: MessageSeen }) => {
+          if (response.error) {
+            console.error("Failed to mark seen:", response.error);
+          }
+        }
+      );
+    };
+
+    if (isMyMessage) return;
+
+    // Don't emit again if this user has already seen the message
+    const alreadySeen = seen.some((s) => s.participant_id === userId);
+    if (alreadySeen) return;
+
+    const element = bubbleRef.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          handleMessageSeen();
+          observer.disconnect(); // trigger only once
+        }
+      },
+      {
+        threshold: 0.5, // 50% of the bubble must be visible
+      }
+    );
+
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [_id, isMyMessage, seen, userId, chat_id]);
 
   return (
     <div
+      ref={bubbleRef}
       className={clsx(
         "flex my-1.5 items-end gap-2.5",
         isMyMessage ? "flex-row-reverse" : "flex-row"
@@ -90,14 +141,29 @@ const ChatBubble = ({
         <p className="break-words whitespace-pre-wrap">{content}</p>
 
         {/* Timestamp */}
-        <p
+        <div
           className={clsx(
-            "text-[10px] mt-1 text-white/30 select-none",
-            isMyMessage ? "text-right" : "text-left"
+            "flex items-center gap-1 mt-1",
+            isMyMessage ? "justify-end" : "justify-start"
           )}
         >
-          {getMessageDateTimeStamp(createdAt)}
-        </p>
+          <p
+            className={clsx(
+              "text-[10px] text-white/30 select-none",
+              isMyMessage ? "text-right" : "text-left"
+            )}
+          >
+            {getMessageDateTimeStamp(createdAt)}
+          </p>
+          {isMyMessage &&
+            (isPending ? (
+              <Clock className="size-2 text-slate-400" />
+            ) : isMessageSeen ? (
+              <CheckCheck className="size-3 text-blue-400" />
+            ) : (
+              <Check className="size-3 text-slate-400" />
+            ))}
+        </div>
       </div>
     </div>
   );

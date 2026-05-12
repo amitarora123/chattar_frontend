@@ -54,6 +54,24 @@ const MessageContainer = () => {
       );
     };
 
+    const handleNewSeen = (data: { message_id: string; userId: string; seen_at: string }) => {
+      queryClient.setQueryData(
+        ["chat-messages", selectedChatId],
+        (oldMessages: Message[] | undefined) => {
+          if (!oldMessages) return oldMessages;
+          return oldMessages.map((m) => {
+            if (m._id !== data.message_id) return m;
+            const alreadySeen = m.seen.some((s) => s.participant_id === data.userId);
+            if (alreadySeen) return m;
+            return {
+              ...m,
+              seen: [...m.seen, { participant_id: data.userId, viewed_at: data.seen_at }],
+            };
+          });
+        }
+      );
+    };
+
     const handleTypingStart = ({ userId }: { userId: string }) => {
       setTypingUsers((prev) => [...new Set([...prev, userId])]);
     };
@@ -67,9 +85,11 @@ const MessageContainer = () => {
     socket.on("typing:stop", handleTypingStop);
 
     socket.on("message:new", handleNewMessage);
+    socket.on("message:new_seen", handleNewSeen);
 
     return () => {
       socket.off("message:new", handleNewMessage);
+      socket.off("message:new_seen", handleNewSeen);
       socket.off("typing:start", handleTypingStart);
       socket.off("typing:stop", handleTypingStop);
     };
@@ -98,6 +118,7 @@ const MessageContainer = () => {
           key={message._id}
           message={message}
           userId={userId || ""}
+          totalMembers={selectedChat?.participants.length || 0}
         />
       ))}
 
