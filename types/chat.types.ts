@@ -18,6 +18,7 @@ export interface Chat {
   participants: ChatParticipant[];
   last_message?: Message | null;
   groupMetaData?: GroupMetaData;
+  unread_count: number;
   createdAt: string;
   updatedAt: string;
 }

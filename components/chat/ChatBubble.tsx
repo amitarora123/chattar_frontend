@@ -1,8 +1,7 @@
-import { socket } from "@/lib/socket/socketClient";
 import { getMessageDateTimeStamp } from "@/lib/utils";
-import { Message, MessageSeen } from "@/types/message.types";
+import { Message } from "@/types/message.types";
 import clsx from "clsx";
-import { User, Loader2, Clock, CheckCheck, Check } from "lucide-react";
+import { User, Clock, CheckCheck, Check } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 
@@ -11,6 +10,7 @@ interface ChatBubbleProps {
   userId: string;
   isGroup?: boolean;
   totalMembers: number;
+  handleMessageSeen: (message_id: string) => void;
 }
 
 const formatFileSize = (fileSize: number) => {
@@ -31,46 +31,34 @@ const ChatBubble = ({
   isGroup,
   message: { _id, sender, content, createdAt, attachment, isPending, chat_id, seen },
   totalMembers,
+  handleMessageSeen,
 }: ChatBubbleProps) => {
   const isMyMessage = sender.user._id === userId;
   const bubbleRef = useRef<HTMLDivElement>(null);
+  const hasFiredRef = useRef(false);
 
-  const isMessageSeen = seen.filter((s) => s.participant_id !== userId).length === totalMembers - 1;
+  const isMessageSeen = seen.filter((s) => s.user_id !== userId).length === totalMembers - 1;
 
   useEffect(() => {
-    // Don't mark your own messages as seen
-
-    const handleMessageSeen = () => {
-      socket.emit(
-        "message:seen",
-        { room: `chat:${chat_id}`, userId, message_id: _id },
-        (response: { error?: string; data?: MessageSeen }) => {
-          if (response.error) {
-            console.error("Failed to mark seen:", response.error);
-          }
-        }
-      );
-    };
-
-    if (isMyMessage) return;
-
-    // Don't emit again if this user has already seen the message
-    const alreadySeen = seen.some((s) => s.participant_id === userId);
-    if (alreadySeen) return;
+    if (!userId || isMyMessage) return;
+    if (hasFiredRef.current) return;
+    if (seen.some((s) => s.user_id === userId)) {
+      hasFiredRef.current = true;
+      return;
+    }
 
     const element = bubbleRef.current;
     if (!element) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          handleMessageSeen();
-          observer.disconnect(); // trigger only once
+        if (entry.isIntersecting && !hasFiredRef.current) {
+          hasFiredRef.current = true;
+          handleMessageSeen(_id);
+          observer.disconnect();
         }
       },
-      {
-        threshold: 0.5, // 50% of the bubble must be visible
-      }
+      { threshold: 0.5 }
     );
 
     observer.observe(element);
@@ -78,7 +66,7 @@ const ChatBubble = ({
     return () => {
       observer.disconnect();
     };
-  }, [_id, isMyMessage, seen, userId, chat_id]);
+  }, [_id, isMyMessage, seen, userId, handleMessageSeen]);
 
   return (
     <div
@@ -138,7 +126,7 @@ const ChatBubble = ({
         )}
 
         {/* Message text */}
-        <p className="break-words whitespace-pre-wrap">{content}</p>
+        <p className="wrap-break-word whitespace-pre-wrap">{content}</p>
 
         {/* Timestamp */}
         <div
@@ -161,7 +149,7 @@ const ChatBubble = ({
             ) : isMessageSeen ? (
               <CheckCheck className="size-3 text-blue-400" />
             ) : (
-              <Check className="size-3 text-slate-400" />
+              <CheckCheck className="size-3 text-slate-400" />
             ))}
         </div>
       </div>

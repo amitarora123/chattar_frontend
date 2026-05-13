@@ -40,6 +40,11 @@ const ChatListItem = ({
     displayName = otherParticipant!.contactName ?? otherParticipant!.user.username;
     avatar_url = otherParticipant?.user.avatar_url ?? "";
   }
+
+  const isMyMessage = chat.last_message?.sender.user._id === authUser._id;
+
+  const isMessageSeen = chat.last_message?.seen.find((s) => s.user_id === authUser._id);
+
   return (
     <li
       key={chat._id}
@@ -76,18 +81,27 @@ const ChatListItem = ({
         <div className="flex items-center justify-between">
           <span className="font-medium truncate">{displayName}</span>
 
-          {chat.last_message?.createdAt && (
-            <span className="text-xs whitespace-nowrap ml-2 text-neutral-400">
-              {getMessageDateTimeStamp(chat.last_message.createdAt)}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {chat.unread_count > 0 && (
+              <span className="size-4 flex items-center justify-center text-[9px] rounded-full bg-red-500 text-white">
+                {chat.unread_count}
+              </span>
+            )}
+            {chat.last_message?.createdAt && (
+              <span className="text-xs whitespace-nowrap ml-2 text-neutral-400">
+                {getMessageDateTimeStamp(chat.last_message.createdAt)}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Last Message */}
         {chat.last_message && (
-          <p className="truncate text-sm text-neutral-400 mt-1">
+          <p
+            className={`truncate text-sm text-neutral-400 mt-1 ${!isMyMessage && !isMessageSeen ? "font-semibold text-white" : "text-neutral-400"}`}
+          >
             {chat.is_group &&
-              (chat.last_message.sender.user._id === authUser._id
+              (isMyMessage
                 ? "me: "
                 : (chat.last_message.sender.contactName || chat.last_message.sender.user.username) +
                   ": ")}

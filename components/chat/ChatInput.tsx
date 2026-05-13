@@ -1,6 +1,6 @@
 import { Paperclip, Plus, Send, X } from "lucide-react";
 import { Button } from "../ui/button";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { InfiniteData, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useRef, useEffect } from "react";
 import { socket } from "@/lib/socket/socketClient";
 import { useAuth } from "@/lib/providers/AuthProvider";
@@ -47,7 +47,7 @@ const AttachmentDropdown = ({ setImage }: AttachmentDropdownProps) => {
           <Plus className="size-5" />
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent className="w-40" align="start">
+        <DropdownMenuContent className="w-40" align="start" side="top" sideOffset={20}>
           <DropdownMenuGroup>
             <DropdownMenuItem
               onClick={() => ref.current?.click()}
@@ -127,8 +127,14 @@ const ChatInput = ({ chatId }: ChatInputProps) => {
         isPending: true,
       };
 
-      queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
-        old ? [...old, tempMessage] : [tempMessage]
+      queryClient.setQueryData(
+        ["chat-messages", chatId],
+        (old: InfiniteData<Message[]> | undefined) => {
+          if (!old) return old;
+          const newPages = [...old.pages];
+          newPages[0] = [...newPages[0], tempMessage];
+          return { ...old, pages: newPages };
+        }
       );
 
       // Clear UI immediately
@@ -154,17 +160,29 @@ const ChatInput = ({ chatId }: ChatInputProps) => {
             },
             (response: { error?: string; data?: Message }) => {
               if (response.error || !response.data) {
-                // Remove temp message on error
-                queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
-                  old ? old.filter((msg) => msg._id !== tempId) : []
+                queryClient.setQueryData(
+                  ["chat-messages", chatId],
+                  (old: InfiniteData<Message[]> | undefined) => {
+                    if (!old) return old;
+                    return {
+                      ...old,
+                      pages: old.pages.map((page) => page.filter((msg) => msg._id !== tempId)),
+                    };
+                  }
                 );
                 return;
               }
-              // Replace temp message with real message
-              queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
-                old
-                  ? old.map((msg) => (msg._id === tempId ? response.data! : msg))
-                  : [response.data!]
+              queryClient.setQueryData(
+                ["chat-messages", chatId],
+                (old: InfiniteData<Message[]> | undefined) => {
+                  if (!old) return old;
+                  return {
+                    ...old,
+                    pages: old.pages.map((page) =>
+                      page.map((msg) => (msg._id === tempId ? response.data! : msg))
+                    ),
+                  };
+                }
               );
               queryClient.setQueryData(["chats"], (old: Chat[] | undefined) =>
                 old?.map((c) => (c._id === chatId ? { ...c, last_message: response.data! } : c))
@@ -173,9 +191,15 @@ const ChatInput = ({ chatId }: ChatInputProps) => {
           );
         },
         onError: (error) => {
-          // Remove temp message on upload failure
-          queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
-            old ? old.filter((msg) => msg._id !== tempId) : []
+          queryClient.setQueryData(
+            ["chat-messages", chatId],
+            (old: InfiniteData<Message[]> | undefined) => {
+              if (!old) return old;
+              return {
+                ...old,
+                pages: old.pages.map((page) => page.filter((msg) => msg._id !== tempId)),
+              };
+            }
           );
           showErrorMessage(error);
         },
@@ -205,8 +229,14 @@ const ChatInput = ({ chatId }: ChatInputProps) => {
         isPending: true,
       };
 
-      queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
-        old ? [...old, tempMessage] : [tempMessage]
+      queryClient.setQueryData(
+        ["chat-messages", chatId],
+        (old: InfiniteData<Message[]> | undefined) => {
+          if (!old) return old;
+          const newPages = [...old.pages];
+          newPages[0] = [...newPages[0], tempMessage];
+          return { ...old, pages: newPages };
+        }
       );
 
       // Clear UI immediately
@@ -219,15 +249,29 @@ const ChatInput = ({ chatId }: ChatInputProps) => {
         { room: `chat:${chatId}`, chat_id: chatId, content },
         (response: { error?: string; data?: Message }) => {
           if (response.error || !response.data) {
-            // Remove temp message on error
-            queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
-              old ? old.filter((msg) => msg._id !== tempId) : []
+            queryClient.setQueryData(
+              ["chat-messages", chatId],
+              (old: InfiniteData<Message[]> | undefined) => {
+                if (!old) return old;
+                return {
+                  ...old,
+                  pages: old.pages.map((page) => page.filter((msg) => msg._id !== tempId)),
+                };
+              }
             );
             return;
           }
-          // Replace temp message with real message
-          queryClient.setQueryData(["chat-messages", chatId], (old: Message[] | undefined) =>
-            old ? old.map((msg) => (msg._id === tempId ? response.data! : msg)) : [response.data!]
+          queryClient.setQueryData(
+            ["chat-messages", chatId],
+            (old: InfiniteData<Message[]> | undefined) => {
+              if (!old) return old;
+              return {
+                ...old,
+                pages: old.pages.map((page) =>
+                  page.map((msg) => (msg._id === tempId ? response.data! : msg))
+                ),
+              };
+            }
           );
           queryClient.setQueryData(["chats"], (old: Chat[] | undefined) =>
             old?.map((c) => (c._id === chatId ? { ...c, last_message: response.data! } : c))

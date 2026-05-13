@@ -1,13 +1,11 @@
 import { clearChat } from "@/lib/api/chat.api";
 import { useChatStore } from "@/lib/store/chatStore";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, User, X } from "lucide-react";
 import Image from "next/image";
 import { Separator } from "../ui/separator";
-import { Button } from "../ui/button";
 import { useEffect } from "react";
 import { socket } from "@/lib/socket/socketClient";
-import ChatClear from "./ChatClear";
 import { useAuth } from "@/lib/providers/AuthProvider";
 
 const ChatHeader = () => {
@@ -64,11 +62,14 @@ const ChatHeader = () => {
       <header className="px-4 py-3  ">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
+            <button className="md:hidden" onClick={() => selectChat(null)}>
+              <ArrowLeft className="size-5 text-white font-semibold" />{" "}
+            </button>
             {avatar_url ? (
               <Image
                 src={avatar_url}
-                width={40}
-                height={40}
+                width={25}
+                height={25}
                 alt={displayName || "Avatar"}
                 className="rounded-full"
               />
@@ -80,12 +81,7 @@ const ChatHeader = () => {
               <p className="text-slate-400 text-sm">({participantsName.join(", ")})</p>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <ChatClear onConfirm={handleClearChat} />
-            <Button onClick={() => selectChat(null)} variant="outline">
-              <X />
-            </Button>
-          </div>
+          <div className="flex items-center gap-2"></div>
         </div>
       </header>
       <Separator />

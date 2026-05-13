@@ -28,6 +28,6 @@ export interface SendMessageProps {
 }
 
 export interface MessageSeen {
-  participant_id: string;
+  user_id: string;
   viewed_at: string;
 }
