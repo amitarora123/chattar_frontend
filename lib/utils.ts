@@ -29,11 +29,7 @@ export const getMessageDateTimeStamp = (dateString: string): string => {
   const inputDate = new Date(dateString);
   const now = new Date();
 
-  const startOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  );
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   const startOfYesterday = new Date(startOfToday);
   startOfYesterday.setDate(startOfToday.getDate() - 1);
@@ -90,10 +86,10 @@ export const showErrorMessage = (error: unknown | string) => {
   let message;
   if (typeof error === "string") {
     message = error;
-  }
-  else {
+  } else {
     const axiosError = error as AxiosError;
-    message = (axiosError.response?.data as {message: string}).message;
+    message =
+      (axiosError.response?.data as { message: string })?.message || (error as Error)?.message;
   }
   toast.error(message || "Something went wrong", {
     style: {

@@ -1,5 +1,6 @@
 export interface GetSignedUrlProps {
   folder: string;
+  attachmentType: "image" | "doc";
 }
 
 export interface GetSignedUrlResponse {

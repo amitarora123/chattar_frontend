@@ -1,6 +1,6 @@
 "use client";
 import { getMe, updateMe } from "@/lib/api/user.api";
-import { uploadImage } from "@/lib/api/cloudinary.api";
+import { uploadAttachment } from "@/lib/api/cloudinary.api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import ProfilePictureUploader from "./ProfilePictureUploader";
@@ -29,7 +29,7 @@ const ProfileForm = () => {
   });
 
   const uploadImageMutation = useMutation({
-    mutationFn: uploadImage,
+    mutationFn: uploadAttachment,
     onError: (error) => {
       showErrorMessage(error);
     },
@@ -64,7 +64,10 @@ const ProfileForm = () => {
     let avatarUrl = userDetails?.avatar_url;
 
     if (file) {
-      const { secure_url } = await uploadImageMutation.mutateAsync(file);
+      const { secure_url } = await uploadImageMutation.mutateAsync({
+        file,
+        attachmentType: "image",
+      });
       avatarUrl = secure_url;
     }
 

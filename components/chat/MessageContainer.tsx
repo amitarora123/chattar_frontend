@@ -177,6 +177,7 @@ const MessageContainer = () => {
 
   useEffect(() => {
     const handleNewMessage = (message: Message) => {
+      console.log(message.attachment);
       queryClient.setQueryData(
         ["chat-messages", selectedChatId],
         (oldData: InfiniteData<Message[]> | undefined) => {

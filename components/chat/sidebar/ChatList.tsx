@@ -105,7 +105,7 @@ const ChatListItem = ({
                 ? "me: "
                 : (chat.last_message.sender.contactName || chat.last_message.sender.user.username) +
                   ": ")}
-            {chat.last_message.content || chat.last_message.attachment?.file_type}
+            {chat.last_message.content || chat.last_message.attachment?.file_name}
           </p>
         )}
       </div>
