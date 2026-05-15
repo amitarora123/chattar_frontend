@@ -4,6 +4,7 @@ import { BatteryPlus, Search, User } from "lucide-react";
 import { useSidebarStore } from "@/lib/store/sidebarStore";
 import clsx from "clsx";
 import { useChatStore } from "@/lib/store/chatStore";
+import { useTypingStore } from "@/lib/store/typingStore";
 import { useEffect, useState } from "react";
 
 import { Button } from "../../ui/button";
@@ -19,6 +20,8 @@ import { User as AuthUser } from "@/types/user.types";
 import ChatSkelton from "@/components/skelton/ChatSkelton";
 import { Ticks } from "../ChatBubble";
 
+const EMPTY_TYPING: string[] = [];
+
 const ChatListItem = ({
   chat,
   onlineUserIds,
@@ -29,6 +32,7 @@ const ChatListItem = ({
   authUser: AuthUser;
 }) => {
   const { selectChat } = useChatStore();
+  const typingUserIds = useTypingStore((s) => s.typingByChatId[chat._id] ?? EMPTY_TYPING);
 
   let displayName = "";
   let avatar_url = "";
@@ -40,6 +44,25 @@ const ChatListItem = ({
     otherParticipant = chat.participants.find((p) => p.user._id !== authUser._id);
     displayName = otherParticipant!.contactName ?? otherParticipant!.user.username;
     avatar_url = otherParticipant?.user.avatar_url ?? "";
+  }
+
+  let typingLabel = "";
+  if (typingUserIds.length > 0) {
+    if (!chat.is_group) {
+      typingLabel = "typing...";
+    } else {
+      const names = typingUserIds.map((uid) => {
+        const p = chat.participants.find((p) => p.user._id === uid);
+        return p?.contactName || p?.user.username || "Someone";
+      });
+      if (names.length === 1) {
+        typingLabel = `${names[0]} is typing...`;
+      } else if (names.length === 2) {
+        typingLabel = `${names[0]}, ${names[1]} are typing...`;
+      } else {
+        typingLabel = `${names[0]} and ${names.length - 1} others are typing...`;
+      }
+    }
   }
 
   const isMyMessage = chat.last_message?.sender.user._id === authUser._id;
@@ -101,7 +124,9 @@ const ChatListItem = ({
         </div>
 
         {/* Last Message */}
-        {chat.last_message && (
+        {typingLabel ? (
+          <p className="truncate text-sm text-green-400 mt-1 animate-pulse">{typingLabel}</p>
+        ) : chat.last_message ? (
           <div className="flex items-center gap-1">
             {isMyMessage && (
               <Ticks
@@ -111,7 +136,7 @@ const ChatListItem = ({
               />
             )}
             <p
-              className={`truncate text-sm text-neutral-400 mt-1 ${!isMyMessage && !isMessageSeen ? "font-semibold text-white" : "text-neutral-400"}`}
+              className={`truncate text-sm mt-1 ${!isMyMessage && !isMessageSeen ? "font-semibold text-white" : "text-neutral-400"}`}
             >
               {chat.is_group &&
                 (isMyMessage
@@ -121,7 +146,7 @@ const ChatListItem = ({
               {chat.last_message.content || chat.last_message.attachment?.file_name}
             </p>
           </div>
-        )}
+        ) : null}
       </div>
     </li>
   );

@@ -1,11 +1,12 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import ChatBubble from "./ChatBubble";
-import { useInfiniteQuery, InfiniteData } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { getChatMessages } from "@/lib/api/message.api";
 import { useChatStore } from "@/lib/store/chatStore";
+import { useTypingStore } from "@/lib/store/typingStore";
 import { socket } from "@/lib/socket/socketClient";
 import { useQueryClient } from "@tanstack/react-query";
-import { Message, MessageSeen } from "@/types/message.types";
+import { MessageSeen } from "@/types/message.types";
 import Image from "next/image";
 import TypingIndicator from "./TypingIndicator";
 import { useAuth } from "@/lib/providers/AuthProvider";
@@ -30,12 +31,14 @@ const formatDateSeparator = (dateStr: string): string => {
   return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 };
 
+const EMPTY_TYPING: string[] = [];
+
 const MessageContainer = () => {
   const userId = useAuth().user?._id;
   const { selectedChat } = useChatStore();
   const selectedChatId = selectedChat?._id;
 
-  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const typingUsers = useTypingStore((s) => s.typingByChatId[selectedChatId ?? ""] ?? EMPTY_TYPING);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const separatorRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -174,90 +177,6 @@ const MessageContainer = () => {
     },
     [selectedChat, userId, decreaseUnreadCount]
   );
-
-  useEffect(() => {
-    const handleNewMessage = (message: Message) => {
-      console.log(message.attachment);
-      queryClient.setQueryData(
-        ["chat-messages", selectedChatId],
-        (oldData: InfiniteData<Message[]> | undefined) => {
-          if (!oldData) return oldData;
-          const alreadyExists = oldData.pages.some((page) =>
-            page.some((m) => m._id === message._id)
-          );
-          if (alreadyExists) return oldData;
-          const newPages = [...oldData.pages];
-          newPages[0] = [...newPages[0], message];
-          return { ...oldData, pages: newPages };
-        }
-      );
-      queryClient.setQueryData(["chats"], (chats: Chat[]) => {
-        const updatedChats = chats.map((c) =>
-          c._id === selectedChat!._id ? { ...c, last_message: message } : c
-        );
-        return updatedChats;
-      });
-    };
-
-    const handleNewSeen = (data: { message_id: string; userId: string; seen_at: string }) => {
-      queryClient.setQueryData(
-        ["chat-messages", selectedChatId],
-        (oldData: InfiniteData<Message[]> | undefined) => {
-          if (!oldData) return oldData;
-          return {
-            ...oldData,
-            pages: oldData.pages.map((page) =>
-              page.map((m) => {
-                if (m._id !== data.message_id) return m;
-                const alreadySeen = m.seen.some((s) => s.user_id === data.userId);
-                if (alreadySeen) return m;
-                return {
-                  ...m,
-                  seen: [...m.seen, { user_id: data.userId, viewed_at: data.seen_at }],
-                };
-              })
-            ),
-          };
-        }
-      );
-
-      queryClient.setQueryData(["chats"], (chats: Chat[]) => {
-        if (!chats) return chats;
-        return chats.map((c) => {
-          if (c._id !== selectedChatId || c.last_message?._id !== data.message_id) return c;
-          const alreadySeen = c.last_message.seen.some((s) => s.user_id === data.userId);
-          if (alreadySeen) return c;
-          return {
-            ...c,
-            last_message: {
-              ...c.last_message,
-              seen: [...c.last_message.seen, { user_id: data.userId, viewed_at: data.seen_at }],
-            },
-          };
-        });
-      });
-    };
-
-    const handleTypingStart = ({ userId }: { userId: string }) => {
-      setTypingUsers((prev) => [...new Set([...prev, userId])]);
-    };
-
-    const handleTypingStop = ({ userId }: { userId: string }) => {
-      setTypingUsers((prev) => prev.filter((id) => id !== userId));
-    };
-
-    socket.on("typing:start", handleTypingStart);
-    socket.on("typing:stop", handleTypingStop);
-    socket.on("message:new", handleNewMessage);
-    socket.on("message:new_seen", handleNewSeen);
-
-    return () => {
-      socket.off("message:new", handleNewMessage);
-      socket.off("message:new_seen", handleNewSeen);
-      socket.off("typing:start", handleTypingStart);
-      socket.off("typing:stop", handleTypingStop);
-    };
-  }, [queryClient, selectedChatId, selectedChat]);
 
   if (isLoading) {
     return (

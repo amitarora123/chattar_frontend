@@ -3,9 +3,11 @@ import AppSidebar from "@/components/layout/AppSidebar";
 import React, { useEffect } from "react";
 import { socket } from "@/lib/socket/socketClient";
 import AuthProvider, { useAuth } from "@/lib/providers/AuthProvider";
+import { useGlobalSocket } from "@/lib/hooks/useGlobalSocket";
 
 const SocketConnector = () => {
   const { user } = useAuth();
+  useGlobalSocket();
 
   useEffect(() => {
     if (!user?._id) return;
