@@ -146,7 +146,7 @@ const MessageContainer = () => {
                 unread_count: c.unread_count - 1,
                 last_message:
                   c.last_message?._id === message_id
-                    ? { ...c.last_message, seen: [c.last_message.seen, data] }
+                    ? { ...c.last_message, seen: [...c.last_message.seen, data] }
                     : c.last_message,
               }
             : c
@@ -213,13 +213,29 @@ const MessageContainer = () => {
                 if (alreadySeen) return m;
                 return {
                   ...m,
-                  seen: [...m.seen, { participant_id: data.userId, viewed_at: data.seen_at }],
+                  seen: [...m.seen, { user_id: data.userId, viewed_at: data.seen_at }],
                 };
               })
             ),
           };
         }
       );
+
+      queryClient.setQueryData(["chats"], (chats: Chat[]) => {
+        if (!chats) return chats;
+        return chats.map((c) => {
+          if (c._id !== selectedChatId || c.last_message?._id !== data.message_id) return c;
+          const alreadySeen = c.last_message.seen.some((s) => s.user_id === data.userId);
+          if (alreadySeen) return c;
+          return {
+            ...c,
+            last_message: {
+              ...c.last_message,
+              seen: [...c.last_message.seen, { user_id: data.userId, viewed_at: data.seen_at }],
+            },
+          };
+        });
+      });
     };
 
     const handleTypingStart = ({ userId }: { userId: string }) => {
@@ -261,7 +277,7 @@ const MessageContainer = () => {
   return (
     <div
       ref={scrollContainerRef}
-      className="overflow-y-auto gap-3 min-h-0 flex-1 px-5 hide-scrollbar"
+      className="overflow-y-auto gap-3 min-h-0 flex flex-col flex-1 px-5 hide-scrollbar"
     >
       <div ref={topSentinelRef} />
       {isFetchingNextPage && (

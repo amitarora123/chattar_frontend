@@ -11,6 +11,8 @@ interface ChatContainerProps {
 const ChatContainer = ({ className }: ChatContainerProps) => {
   const { selectedChat } = useChatStore();
 
+  if (!selectedChat) return null;
+
   return (
     <section className={clsx(className, "w-full h-full flex overflow-hidden flex-col  relative")}>
       <ChatHeader />

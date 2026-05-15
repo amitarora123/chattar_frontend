@@ -35,7 +35,7 @@ interface TicksProps {
   isMessageSeen: boolean;
 }
 
-const Ticks = ({ isMyMessage, isPending, isMessageSeen }: TicksProps) => {
+export const Ticks = ({ isMyMessage, isPending, isMessageSeen }: TicksProps) => {
   if (!isMyMessage) return null;
   if (isPending) return <Clock className="size-3 text-slate-400 shrink-0" />;
   if (isMessageSeen) return <CheckCheck className="size-3 text-blue-400 shrink-0" />;
@@ -156,7 +156,7 @@ const ChatBubble = ({
                 src={attachment.file_url}
                 width={300}
                 height={220}
-                alt={attachment.file_name}
+                alt={attachment.file_name || attachment.file_url}
                 className="w-full max-w-75 object-cover block"
               />
             )}
@@ -206,7 +206,7 @@ const ChatBubble = ({
             <div className="flex items-center gap-3 px-3 py-3">
               <div
                 className={clsx(
-                  "text-white text-[10px] font-bold px-1.5 py-1 rounded flex-shrink-0",
+                  "text-white text-[10px] font-bold px-1.5 py-1 rounded shrink-0",
                   docMeta.badgeColor
                 )}
               >

@@ -18,7 +18,6 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { uploadAttachment } from "@/lib/api/cloudinary.api";
 import { showErrorMessage } from "@/lib/utils";
-import { AxiosError } from "axios";
 
 const PdfPreview = dynamic(() => import("./PdfPreview"), { ssr: false });
 
@@ -68,7 +67,14 @@ const AttachmentDropdown = ({ setImage, setDoc }: AttachmentDropdownProps) => {
           <Plus className="size-5" />
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent className="w-40" align="start" side="top" sideOffset={20}>
+        <DropdownMenuContent
+          alignOffset={-10} // fine-tune left offset if needed
+          className="w-40"
+          align="start"
+          side="top"
+          sideOffset={25}
+          avoidCollisions={false} // prevents Radix from auto-flipping alignment
+        >
           <DropdownMenuGroup>
             <DropdownMenuItem
               onClick={() => imageInputRef.current?.click()}
@@ -167,6 +173,19 @@ const ChatInput = ({ chatId }: ChatInputProps) => {
       }
     );
 
+    queryClient.setQueryData(["chats"], (chats: Chat[]) => {
+      const updatedChats = chats.map((c) =>
+        c._id === chatId
+          ? {
+              ...c,
+              unread_count: c.unread_count - 1,
+              last_message: tempMessage,
+            }
+          : c
+      );
+      return updatedChats;
+    });
+
     // Clear UI immediately
     setValue("");
     setImage(null);
@@ -189,8 +208,6 @@ const ChatInput = ({ chatId }: ChatInputProps) => {
 
     const onMessageSent = (response: { error?: string; data?: Message }) => {
       if (response.error || !response.data) return removeTempMessage();
-
-      console.log(response.data.attachment);
       queryClient.setQueryData(
         ["chat-messages", chatId],
         (old: InfiniteData<Message[]> | undefined) => {

@@ -17,6 +17,7 @@ import { useAuth } from "@/lib/providers/AuthProvider";
 import { Chat } from "@/types/chat.types";
 import { User as AuthUser } from "@/types/user.types";
 import ChatSkelton from "@/components/skelton/ChatSkelton";
+import { Ticks } from "../ChatBubble";
 
 const ChatListItem = ({
   chat,
@@ -44,6 +45,10 @@ const ChatListItem = ({
   const isMyMessage = chat.last_message?.sender.user._id === authUser._id;
 
   const isMessageSeen = chat.last_message?.seen.find((s) => s.user_id === authUser._id);
+
+  const myMessageSeen = chat.last_message?.seen.filter((s) => s.user_id !== authUser._id);
+
+  const isMyMessageSeen = chat.participants.length - 1 === myMessageSeen?.length;
 
   return (
     <li
@@ -97,16 +102,25 @@ const ChatListItem = ({
 
         {/* Last Message */}
         {chat.last_message && (
-          <p
-            className={`truncate text-sm text-neutral-400 mt-1 ${!isMyMessage && !isMessageSeen ? "font-semibold text-white" : "text-neutral-400"}`}
-          >
-            {chat.is_group &&
-              (isMyMessage
-                ? "me: "
-                : (chat.last_message.sender.contactName || chat.last_message.sender.user.username) +
-                  ": ")}
-            {chat.last_message.content || chat.last_message.attachment?.file_name}
-          </p>
+          <div className="flex items-center gap-1">
+            {isMyMessage && (
+              <Ticks
+                isPending={!!chat.last_message.isPending}
+                isMessageSeen={isMyMessageSeen}
+                isMyMessage={isMyMessage}
+              />
+            )}
+            <p
+              className={`truncate text-sm text-neutral-400 mt-1 ${!isMyMessage && !isMessageSeen ? "font-semibold text-white" : "text-neutral-400"}`}
+            >
+              {chat.is_group &&
+                (isMyMessage
+                  ? "me: "
+                  : (chat.last_message.sender.contactName ||
+                      chat.last_message.sender.user.username) + ": ")}
+              {chat.last_message.content || chat.last_message.attachment?.file_name}
+            </p>
+          </div>
         )}
       </div>
     </li>
@@ -118,10 +132,13 @@ const ChatList = () => {
   const { changeSidebar } = useSidebarStore();
   const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
 
-  const { data: chats, isLoading } = useQuery({
+  const { data: chats, isLoading: chatsLoading } = useQuery({
     queryKey: ["chats"],
     queryFn: getMyChats,
+    enabled: !!user,
   });
+
+  const isLoading = authLoading || chatsLoading;
 
   const [activeTabs, setActiveTabs] = useState<"All" | "Unread">("All");
 
@@ -144,20 +161,6 @@ const ChatList = () => {
       socket.off("user:offline");
     };
   }, []);
-
-  if (authLoading) {
-    return (
-      <div>
-        <ChatSkelton />
-        <ChatSkelton />
-        <ChatSkelton />
-        <ChatSkelton />
-        <ChatSkelton />
-      </div>
-    );
-  }
-
-  if (!user) return null;
 
   return (
     <>
@@ -229,7 +232,7 @@ const ChatList = () => {
                 <ChatListItem
                   key={chat._id}
                   chat={chat}
-                  authUser={user}
+                  authUser={user!}
                   onlineUserIds={onlineUserIds}
                 />
               ))}
