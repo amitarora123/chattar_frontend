@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
-import { BatteryPlus, Search, User } from "lucide-react";
+import { Search, User, Users, UsersRound } from "lucide-react";
 import { useSidebarStore } from "@/lib/store/sidebarStore";
 import clsx from "clsx";
 import { useChatStore } from "@/lib/store/chatStore";
@@ -42,7 +42,7 @@ const ChatListItem = ({
     avatar_url = chat.groupMetaData?.avatar_url ?? "";
   } else {
     otherParticipant = chat.participants.find((p) => p.user._id !== authUser._id);
-    displayName = otherParticipant!.contactName ?? otherParticipant!.user.username;
+    displayName = otherParticipant?.user.display_name || otherParticipant!.user.username;
     avatar_url = otherParticipant?.user.avatar_url ?? "";
   }
 
@@ -53,7 +53,7 @@ const ChatListItem = ({
     } else {
       const names = typingUserIds.map((uid) => {
         const p = chat.participants.find((p) => p.user._id === uid);
-        return p?.contactName || p?.user.username || "Someone";
+        return p?.user.username || "Someone";
       });
       if (names.length === 1) {
         typingLabel = `${names[0]} is typing...`;
@@ -65,7 +65,7 @@ const ChatListItem = ({
     }
   }
 
-  const isMyMessage = chat.last_message?.sender.user._id === authUser._id;
+  const isMyMessage = chat.last_message?.sender._id === authUser._id;
 
   const isMessageSeen = chat.last_message?.seen.find((s) => s.user_id === authUser._id);
 
@@ -138,11 +138,7 @@ const ChatListItem = ({
             <p
               className={`truncate text-sm mt-1 ${!isMyMessage && !isMessageSeen ? "font-semibold text-white" : "text-neutral-400"}`}
             >
-              {chat.is_group &&
-                (isMyMessage
-                  ? "me: "
-                  : (chat.last_message.sender.contactName ||
-                      chat.last_message.sender.user.username) + ": ")}
+              {chat.is_group && (isMyMessage ? "me: " : chat.last_message.sender.username) + ": "}
               {chat.last_message.content || chat.last_message.attachment?.file_name}
             </p>
           </div>
@@ -194,20 +190,35 @@ const ChatList = () => {
         <div className="flex w-full  justify-between items-center">
           <Image src="/logo_3.svg" width={150} height={150} alt="logo" />
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                className="rounded-full p-2 transition-colors cursor-pointer duration-200 hover:bg-neutral-800"
-                onClick={() => changeSidebar("NewChat")}
-              >
-                <BatteryPlus />
-              </button>
-            </TooltipTrigger>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className="rounded-full p-2 transition-colors cursor-pointer duration-200 hover:bg-neutral-800"
+                  onClick={() => changeSidebar("DialPad")}
+                >
+                  <Users size={20} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>People</p>
+              </TooltipContent>
+            </Tooltip>
 
-            <TooltipContent>
-              <p>Add new Chat</p>
-            </TooltipContent>
-          </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className="rounded-full p-2 transition-colors cursor-pointer duration-200 hover:bg-neutral-800"
+                  onClick={() => changeSidebar("GroupChat")}
+                >
+                  <UsersRound size={20} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>New Group</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         {/* Search */}

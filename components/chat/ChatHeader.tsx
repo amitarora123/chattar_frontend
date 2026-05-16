@@ -52,9 +52,9 @@ const ChatHeader = () => {
     : recipient?.user.avatar_url || "";
   const displayName = selectedChat.is_group
     ? selectedChat.groupMetaData!.name
-    : recipient?.contactName || recipient?.user.display_name || recipient?.user.username;
+    : recipient?.user.display_name || recipient?.user.username;
   const participantsName = selectedChat.is_group
-    ? selectedChat.participants.map((p) => p.contactName || p.user.display_name || p.user.username)
+    ? selectedChat.participants.map((p) => p.user.display_name || p.user.username)
     : [];
 
   return (

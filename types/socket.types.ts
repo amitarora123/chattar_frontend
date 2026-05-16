@@ -7,8 +7,10 @@ export interface ServerToClientEvents {
   "user:offline": (userId: string) => void;
   "typing:start": (data: { userId: string; chat_id: string }) => void;
   "typing:stop": (data: { userId: string; chat_id: string }) => void;
-  "message:new": (message: Message) => void;
-  "message:new_seen": (data: { message_id: string; userId: string; seen_at: string }) => void;
+  "message:receive": (message: Message) => void;
+  "message:seen": (data: { message_id: string; userId: string; seen_at: string }) => void;
+  "message:update": (message: Message) => void;
+  "message:delete": (data: { message_id: string; chat_id: string }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -29,9 +31,19 @@ export interface ClientToServerEvents {
     ack: (response: { error?: string; data?: Message }) => void
   ) => void;
 
-  "message:seen": (
+  "message:view": (
     data: { room: string; userId: string; message_id: string },
     ack: (response: { error?: string; data?: MessageSeen }) => void
+  ) => void;
+
+  "message:edit": (
+    data: { room: string; message_id: string; content: string },
+    ack: (response: { error?: string; data?: Message }) => void
+  ) => void;
+
+  "message:delete": (
+    data: { room: string; message_id: string },
+    ack: (response: { error?: string }) => void
   ) => void;
 }
 

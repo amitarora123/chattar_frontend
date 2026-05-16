@@ -32,6 +32,4 @@ export interface ChatParticipant {
     last_seen: string;
   };
   groupRole?: GroupRole | null;
-  isContact: boolean;
-  contactName: string | null;
 }

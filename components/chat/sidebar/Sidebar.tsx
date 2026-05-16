@@ -1,10 +1,7 @@
 import { SidebarType } from "@/lib/store/sidebarStore";
 import ChatList from "./ChatList";
-import NewChat from "./NewChat";
-import NewContact from "./NewContact";
-import AddGroupMembers from "./AddGroupMembers";
-import NewGroup from "./NewGroup";
 import DialPad from "./DialPad";
+import GroupChat from "./GroupChat";
 import clsx from "clsx";
 
 interface SidebarProps {
@@ -15,11 +12,8 @@ interface SidebarProps {
 const Sidebar = ({ className, type }: SidebarProps) => {
   const SIDEBAR_COMPONENTS: Record<SidebarType, React.ComponentType> = {
     ChatList,
-    NewChat,
-    NewContact,
-    AddGroupMembers,
     DialPad,
-    NewGroup,
+    GroupChat,
   };
 
   const ActiveComponent = SIDEBAR_COMPONENTS[type];
@@ -27,7 +21,7 @@ const Sidebar = ({ className, type }: SidebarProps) => {
   return (
     <section
       className={clsx(
-        "border-r flex flex-col transition-transform bg-background duration-300 ease-in-out  lg:col-span-1 min-h-0 h-screen",
+        "border-r flex flex-col transition-transform bg-background duration-300 ease-in-out lg:col-span-1 min-h-0 h-screen",
         className
       )}
     >

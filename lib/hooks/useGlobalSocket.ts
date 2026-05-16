@@ -94,16 +94,74 @@ export function useGlobalSocket() {
       clearTyping(chat_id, userId);
     };
 
-    socket.on("message:new", handleNewMessage);
-    socket.on("message:new_seen", handleNewSeen);
+    const handleMessageUpdate = (message: Message) => {
+      queryClient.setQueryData(
+        ["chat-messages", message.chat_id],
+        (oldData: InfiniteData<Message[]> | undefined) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) =>
+              page.map((m) => (m._id === message._id ? message : m))
+            ),
+          };
+        }
+      );
+      queryClient.setQueryData(["chats"], (chats: Chat[] | undefined) => {
+        if (!chats) return chats;
+        return chats.map((c) =>
+          c.last_message?._id === message._id ? { ...c, last_message: message } : c
+        );
+      });
+    };
+
+    const handleMessageDelete = ({
+      message_id,
+      chat_id,
+    }: {
+      message_id: string;
+      chat_id: string;
+    }) => {
+      queryClient.setQueryData(
+        ["chat-messages", chat_id],
+        (oldData: InfiniteData<Message[]> | undefined) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page) =>
+              page.map((m) =>
+                m._id === message_id
+                  ? { ...m, is_deleted: true, content: "", attachment: undefined }
+                  : m
+              )
+            ),
+          };
+        }
+      );
+      queryClient.setQueryData(["chats"], (chats: Chat[] | undefined) => {
+        if (!chats) return chats;
+        return chats.map((c) =>
+          c.last_message?._id === message_id
+            ? { ...c, last_message: { ...c.last_message!, is_deleted: true, content: "" } }
+            : c
+        );
+      });
+    };
+
+    socket.on("message:receive", handleNewMessage);
+    socket.on("message:seen", handleNewSeen);
     socket.on("typing:start", handleTypingStart);
     socket.on("typing:stop", handleTypingStop);
+    socket.on("message:update", handleMessageUpdate);
+    socket.on("message:delete", handleMessageDelete);
 
     return () => {
-      socket.off("message:new", handleNewMessage);
-      socket.off("message:new_seen", handleNewSeen);
+      socket.off("message:receive", handleNewMessage);
+      socket.off("message:seen", handleNewSeen);
       socket.off("typing:start", handleTypingStart);
       socket.off("typing:stop", handleTypingStop);
+      socket.off("message:update", handleMessageUpdate);
+      socket.off("message:delete", handleMessageDelete);
     };
   }, [queryClient, selectedChat, setTyping, clearTyping]);
 }

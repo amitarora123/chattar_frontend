@@ -1,10 +1,14 @@
 import { getMessageDateTimeStamp } from "@/lib/utils";
-import { Message } from "@/types/message.types";
+import { Message, ReplyMessage } from "@/types/message.types";
+import { useChatInputStore } from "@/lib/store/chatInputStore";
 import clsx from "clsx";
-import { User, Clock, CheckCheck, X } from "lucide-react";
+import { User, Clock, CheckCheck, CornerUpLeft, Pencil, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
+import { socket } from "@/lib/socket/socketClient";
+import { useQueryClient, InfiniteData } from "@tanstack/react-query";
+import { useChatStore } from "@/lib/store/chatStore";
 
 const PdfPreview = dynamic(() => import("./PdfPreview"));
 
@@ -42,16 +46,59 @@ export const Ticks = ({ isMyMessage, isPending, isMessageSeen }: TicksProps) => 
   return <CheckCheck className="size-3 text-slate-400 shrink-0" />;
 };
 
+const ReplyBlock = ({
+  reply_to,
+  isMyMessage,
+}: {
+  reply_to: ReplyMessage;
+  isMyMessage: boolean;
+}) => {
+  const preview = reply_to.is_deleted
+    ? "This message was deleted"
+    : reply_to.content || reply_to.attachment?.file_name || "";
+  const senderName = reply_to.sender.username;
+
+  return (
+    <div
+      className={clsx(
+        "flex flex-col px-3 pt-2.5 pb-1.5 border-l-2 rounded-t-xl rounded-b-none mx-0 text-xs",
+        isMyMessage
+          ? "border-blue-400 bg-white/5 text-white/60"
+          : "border-slate-400 bg-white/5 text-white/60"
+      )}
+    >
+      <span className="font-semibold text-white/80 truncate">{senderName}</span>
+      <span className="truncate mt-0.5">{preview}</span>
+    </div>
+  );
+};
+
 const ChatBubble = ({
   userId,
   isGroup,
-  message: { _id, sender, content, createdAt, attachment, isPending, seen },
+  message,
   totalMembers,
   handleMessageSeen,
 }: ChatBubbleProps) => {
-  const isMyMessage = sender.user._id === userId;
+  const {
+    _id,
+    sender,
+    content,
+    createdAt,
+    attachment,
+    isPending,
+    seen,
+    is_edited,
+    is_deleted,
+    reply_to,
+  } = message;
+  const isMyMessage = sender._id === userId;
   const bubbleRef = useRef<HTMLDivElement>(null);
   const hasFiredRef = useRef(false);
+
+  const { setReplyingTo, setEditingMessage } = useChatInputStore();
+  const queryClient = useQueryClient();
+  const selectedChat = useChatStore((s) => s.selectedChat);
 
   const isMessageSeen = seen.filter((s) => s.user_id !== userId).length === totalMembers - 1;
 
@@ -78,10 +125,45 @@ const ChatBubble = ({
     );
 
     observer.observe(element);
-    return () => {
-      observer.disconnect();
-    };
+    return () => observer.disconnect();
   }, [_id, isMyMessage, seen, userId, handleMessageSeen]);
+
+  const handleDelete = () => {
+    if (!selectedChat) return;
+    const room = `chat:${selectedChat._id}`;
+
+    // Optimistic update
+    queryClient.setQueryData(
+      ["chat-messages", selectedChat._id],
+      (old: InfiniteData<Message[]> | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) =>
+            page.map((m) =>
+              m._id === _id ? { ...m, is_deleted: true, content: "", attachment: undefined } : m
+            )
+          ),
+        };
+      }
+    );
+
+    socket.emit("message:delete", { room, message_id: _id }, ({ error }: { error?: string }) => {
+      if (error) {
+        // Rollback on failure
+        queryClient.setQueryData(
+          ["chat-messages", selectedChat._id],
+          (old: InfiniteData<Message[]> | undefined) => {
+            if (!old) return old;
+            return {
+              ...old,
+              pages: old.pages.map((page) => page.map((m) => (m._id === _id ? message : m))),
+            };
+          }
+        );
+      }
+    });
+  };
 
   const isImage = attachment?.file_type.startsWith("image/");
   const isDocument = attachment && !isImage;
@@ -104,26 +186,65 @@ const ChatBubble = ({
     document.body.removeChild(a);
   };
 
-  const senderName = sender.contactName || sender.user.display_name || sender.user.username;
+  const senderName = sender.username;
+
+  // Deleted message — render a minimal tombstone
+  if (is_deleted) {
+    return (
+      <div
+        ref={bubbleRef}
+        className={clsx(
+          "flex my-1.5 items-end gap-2.5",
+          isMyMessage ? "flex-row-reverse" : "flex-row"
+        )}
+      >
+        {isGroup && !isMyMessage && (
+          <div className="shrink-0 w-8 h-8 rounded-full overflow-hidden bg-[#1e2230] flex items-center justify-center">
+            {sender.avatar_url ? (
+              <Image
+                src={sender.avatar_url}
+                width={32}
+                height={32}
+                className="rounded-full object-cover"
+                alt={sender.username}
+              />
+            ) : (
+              <User className="w-4 h-4 text-white/40" />
+            )}
+          </div>
+        )}
+        <div
+          className={clsx(
+            "px-4 py-2 rounded-2xl border text-sm italic text-white/30 border-white/6",
+            isMyMessage ? "rounded-br-lg bg-[#1c2033]" : "rounded-bl-lg bg-[#161b27]"
+          )}
+        >
+          This message was deleted
+        </div>
+      </div>
+    );
+  }
+
+  const canEdit = isMyMessage && !attachment && !isPending;
 
   return (
     <div
       ref={bubbleRef}
       className={clsx(
-        "flex my-1.5 items-end gap-2.5",
+        "flex my-1.5 items-end gap-1.5 group",
         isMyMessage ? "flex-row-reverse" : "flex-row"
       )}
     >
-      {/* Avatar — group, received only */}
+      {/* Avatar — group received only */}
       {isGroup && !isMyMessage && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden bg-[#1e2230] flex items-center justify-center">
-          {sender.user.avatar_url ? (
+        <div className="shrink-0 w-8 h-8 rounded-full overflow-hidden bg-[#1e2230] flex items-center justify-center">
+          {sender.avatar_url ? (
             <Image
-              src={sender.user.avatar_url}
+              src={sender.avatar_url}
               width={32}
               height={32}
               className="rounded-full object-cover"
-              alt={sender.user.username}
+              alt={sender.username}
             />
           ) : (
             <User className="w-4 h-4 text-white/40" />
@@ -141,6 +262,9 @@ const ChatBubble = ({
             : "bg-[#161b27] text-white/90 rounded-bl-lg border-white/4"
         )}
       >
+        {/* Reply block */}
+        {reply_to && <ReplyBlock reply_to={reply_to} isMyMessage={isMyMessage} />}
+
         {/* Image attachment */}
         {isImage && attachment && (
           <div className="relative">
@@ -160,18 +284,13 @@ const ChatBubble = ({
                 className="w-full max-w-75 object-cover block"
               />
             )}
-
-            {/* Upload spinner overlay — ring around X in primary blue */}
             {isPending && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                 <div className="relative w-11 h-11 flex items-center justify-center">
                   <div className="absolute inset-0 rounded-full border-2 border-blue-400/20 border-t-blue-400 animate-spin" />
-                  <X className="size-4 text-white/80" />
                 </div>
               </div>
             )}
-
-            {/* Timestamp overlay when image-only and fully sent */}
             {!content && !isPending && (
               <div className="absolute bottom-1.5 right-2 flex items-center gap-1 bg-black/50 rounded px-1.5 py-0.5">
                 <span className="text-[11px] text-white/80 select-none">{timestamp}</span>
@@ -188,21 +307,16 @@ const ChatBubble = ({
         {/* Document attachment */}
         {isDocument && attachment && docMeta && (
           <>
-            {/* Group sender name */}
             {isGroup && !isMyMessage && (
               <div className="px-3 pt-2.5 pb-0">
                 <p className="text-[11px] font-semibold text-slate-400">{senderName}</p>
               </div>
             )}
-
-            {/* PDF first-page preview — blob URLs work too, so show immediately */}
             {isPdf && (
               <div className="overflow-hidden bg-white" style={{ height: "150px" }}>
                 <PdfPreview url={attachment.file_url} />
               </div>
             )}
-
-            {/* File metadata row */}
             <div className="flex items-center gap-3 px-3 py-3">
               <div
                 className={clsx(
@@ -220,7 +334,6 @@ const ChatBubble = ({
                   {docMeta.badge} • {formatFileSize(attachment.file_size)}
                 </span>
               </div>
-              {/* Timestamp / upload spinner — right of filename, no caption */}
               {!content && (
                 <div className="shrink-0 flex items-center gap-0.5">
                   {isPending ? (
@@ -238,8 +351,6 @@ const ChatBubble = ({
                 </div>
               )}
             </div>
-
-            {/* Open / Save as buttons — hidden while uploading */}
             {!isPending && (
               <div className="flex border-t border-white/6">
                 <button
@@ -260,10 +371,9 @@ const ChatBubble = ({
           </>
         )}
 
-        {/* Text content with inline timestamp */}
+        {/* Text content */}
         {content && (
           <div className="relative px-3.5 py-2.5">
-            {/* Sender name for text-only group messages */}
             {isGroup && !isMyMessage && !isDocument && (
               <p className="text-[11px] font-medium text-slate-400 mb-1 tracking-wide">
                 {senderName}
@@ -271,7 +381,6 @@ const ChatBubble = ({
             )}
             <p className="wrap-break-word whitespace-pre-wrap leading-relaxed">
               {content}
-              {/* Invisible spacer prevents text overlapping the timestamp */}
               <span
                 className="inline-block select-none pointer-events-none"
                 style={{ width: isMyMessage ? "70px" : "50px" }}
@@ -279,6 +388,7 @@ const ChatBubble = ({
               />
             </p>
             <div className="absolute bottom-2.5 right-3.5 flex items-center gap-1">
+              {is_edited && <span className="text-[9px] text-white/25 select-none">edited</span>}
               <span className="text-[10px] text-white/30 select-none">{timestamp}</span>
               <Ticks
                 isMyMessage={isMyMessage}
@@ -289,6 +399,37 @@ const ChatBubble = ({
           </div>
         )}
       </div>
+
+      {/* Hover action buttons */}
+      {!isPending && (
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 self-end pb-1.5">
+          <button
+            onClick={() => setReplyingTo(message)}
+            title="Reply"
+            className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
+          >
+            <CornerUpLeft className="size-3.5" />
+          </button>
+          {canEdit && (
+            <button
+              onClick={() => setEditingMessage(message)}
+              title="Edit"
+              className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
+            >
+              <Pencil className="size-3.5" />
+            </button>
+          )}
+          {isMyMessage && (
+            <button
+              onClick={handleDelete}
+              title="Delete"
+              className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:red-400 transition-colors"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
