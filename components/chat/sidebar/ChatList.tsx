@@ -4,6 +4,7 @@ import { Search, User, Users, UsersRound } from "lucide-react";
 import { useSidebarStore } from "@/lib/store/sidebarStore";
 import { useChatStore } from "@/lib/store/chatStore";
 import { useTypingStore } from "@/lib/store/typingStore";
+import { usePresenceStore } from "@/lib/store/presenceStore";
 import { useEffect, useState } from "react";
 
 import { Input } from "../../ui/input";
@@ -20,17 +21,10 @@ import { Ticks } from "../ChatBubble";
 
 const EMPTY_TYPING: string[] = [];
 
-const ChatListItem = ({
-  chat,
-  onlineUserIds,
-  authUser,
-}: {
-  chat: Chat;
-  onlineUserIds: string[];
-  authUser: AuthUser;
-}) => {
+const ChatListItem = ({ chat, authUser }: { chat: Chat; authUser: AuthUser }) => {
   const { selectChat, selectedChat } = useChatStore();
   const typingUserIds = useTypingStore((s) => s.typingByChatId[chat._id] ?? EMPTY_TYPING);
+  const isOnline = usePresenceStore((s) => s.isOnline);
 
   let displayName = "";
   let avatar_url = "";
@@ -97,11 +91,9 @@ const ChatListItem = ({
         )}
 
         {/* Online Indicator */}
-        {!chat.is_group &&
-          otherParticipant &&
-          onlineUserIds.includes(otherParticipant.user._id) && (
-            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-neutral-900 rounded-full" />
-          )}
+        {!chat.is_group && otherParticipant && isOnline(otherParticipant.user._id) && (
+          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-neutral-900 rounded-full" />
+        )}
       </div>
 
       {/* Chat Content */}
@@ -156,7 +148,7 @@ const ChatListItem = ({
 const ChatList = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { changeSidebar } = useSidebarStore();
-  const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
+  const { setInitial, setOnline, setOffline } = usePresenceStore();
   const [search, setSearch] = useState("");
 
   const { data: chats, isLoading: chatsLoading } = useQuery({
@@ -170,24 +162,16 @@ const ChatList = () => {
   const [activeTabs, setActiveTabs] = useState<"All" | "Unread">("All");
 
   useEffect(() => {
-    socket.on("presence:initial", (users) => {
-      setOnlineUserIds(users);
-    });
-
-    socket.on("user:online", (userId) => {
-      setOnlineUserIds((prev) => [...prev, userId]);
-    });
-
-    socket.on("user:offline", (userId) => {
-      setOnlineUserIds((prev) => prev.filter((id) => id != userId));
-    });
+    socket.on("presence:initial", setInitial);
+    socket.on("user:online", setOnline);
+    socket.on("user:offline", setOffline);
 
     return () => {
       socket.off("presence:initial");
       socket.off("user:online");
       socket.off("user:offline");
     };
-  }, []);
+  }, [setInitial, setOnline, setOffline]);
 
   const tabFilteredChats =
     activeTabs === "All"
@@ -199,17 +183,25 @@ const ChatList = () => {
             : false
         );
 
-  const filteredChats = search.trim()
-    ? tabFilteredChats?.filter((c) => {
-        const q = search.trim().toLowerCase();
-        if (c.is_group) {
-          return c.groupMetaData?.name.toLowerCase().includes(q);
-        } else {
-          const otherParticipant = c.participants.find((p) => p.user._id !== user?._id);
-          return otherParticipant?.user.username.toLowerCase().includes(q);
-        }
-      })
-    : tabFilteredChats;
+  const filteredChats = (
+    search.trim()
+      ? tabFilteredChats?.filter((c) => {
+          const q = search.trim().toLowerCase();
+          if (c.is_group) {
+            return c.groupMetaData?.name.toLowerCase().includes(q);
+          } else {
+            const otherParticipant = c.participants.find((p) => p.user._id !== user?._id);
+            return otherParticipant?.user.username.toLowerCase().includes(q);
+          }
+        })
+      : tabFilteredChats
+  )
+    ?.slice()
+    .sort((a, b) => {
+      const aTime = a.last_message?.createdAt ?? a.createdAt;
+      const bTime = b.last_message?.createdAt ?? b.createdAt;
+      return new Date(bTime).getTime() - new Date(aTime).getTime();
+    });
   return (
     <>
       <div className="p-3 flex flex-col flex-1 min-h-0">
@@ -298,12 +290,7 @@ const ChatList = () => {
           ) : chats?.length ? (
             <ul className="overflow-y-auto hide-scrollbar h-full pb-5">
               {filteredChats?.map((chat) => (
-                <ChatListItem
-                  key={chat._id}
-                  chat={chat}
-                  authUser={user!}
-                  onlineUserIds={onlineUserIds}
-                />
+                <ChatListItem key={chat._id} chat={chat} authUser={user!} />
               ))}
             </ul>
           ) : (
