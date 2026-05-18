@@ -1,4 +1,12 @@
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import ChatBubble from "./ChatBubble";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getChatMessages } from "@/lib/api/message.api";
@@ -30,7 +38,17 @@ const formatDateSeparator = (dateStr: string): string => {
 
 const EMPTY_TYPING: string[] = [];
 
-const MessageContainer = () => {
+interface MessageContainerProps {
+  searchQuery?: string;
+  activeMatchIdx?: number;
+  onMatchCountChange?: (count: number) => void;
+}
+
+const MessageContainer = ({
+  searchQuery = "",
+  activeMatchIdx = 0,
+  onMatchCountChange,
+}: MessageContainerProps) => {
   const userId = useAuth().user?._id;
   const { selectedChat } = useChatStore();
   const selectedChatId = selectedChat?._id;
@@ -76,7 +94,27 @@ const MessageContainer = () => {
 
   // pages[0] = most recent batch, pages[N] = oldest batch (each page sorted ASC)
   // Reverse page order so oldest messages appear at top
-  const messages = data?.pages.slice().reverse().flat() ?? [];
+  const messages = useMemo(() => data?.pages.slice().reverse().flat() ?? [], [data?.pages]);
+
+  const matchIds = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return messages
+      .filter((m) => !m.is_deleted && m.content.toLowerCase().includes(q))
+      .map((m) => m._id);
+  }, [messages, searchQuery]);
+
+  const activeMatchId = matchIds[activeMatchIdx] ?? null;
+
+  useEffect(() => {
+    onMatchCountChange?.(matchIds.length);
+  }, [matchIds.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!activeMatchId || !scrollContainerRef.current) return;
+    const el = scrollContainerRef.current.querySelector(`[data-message-id="${activeMatchId}"]`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [activeMatchId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView();
@@ -236,6 +274,8 @@ const MessageContainer = () => {
               userId={userId || ""}
               totalMembers={selectedChat?.participants.length || 0}
               handleMessageSeen={handleMessageSeen}
+              searchQuery={searchQuery}
+              isActiveMatch={message._id === activeMatchId}
             />
           </Fragment>
         );

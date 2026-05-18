@@ -19,7 +19,30 @@ interface ChatBubbleInnerProps {
   isGroup?: boolean;
   totalMembers: number;
   handleMessageSeen: (message_id: string) => void;
+  searchQuery?: string;
+  isActiveMatch?: boolean;
 }
+
+const HighlightText = ({ text, query }: { text: string; query: string }) => {
+  if (!query.trim()) return <>{text}</>;
+  const lower = text.toLowerCase();
+  const lowerQ = query.toLowerCase();
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  let i = lower.indexOf(lowerQ, last);
+  while (i !== -1) {
+    if (i > last) parts.push(text.slice(last, i));
+    parts.push(
+      <mark key={i} className="bg-yellow-400/50 text-white not-italic rounded-sm">
+        {text.slice(i, i + query.length)}
+      </mark>
+    );
+    last = i + query.length;
+    i = lower.indexOf(lowerQ, last);
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return <>{parts}</>;
+};
 
 type ChatBubbleProps =
   | (ChatBubbleInnerProps & { isTyping?: false })
@@ -84,6 +107,8 @@ const ChatBubbleInner = ({
   message,
   totalMembers,
   handleMessageSeen,
+  searchQuery = "",
+  isActiveMatch = false,
 }: ChatBubbleInnerProps) => {
   const {
     _id,
@@ -204,12 +229,14 @@ const ChatBubbleInner = ({
   };
 
   const senderName = sender.username;
+  const isMatch = !!searchQuery.trim() && content.toLowerCase().includes(searchQuery.toLowerCase());
 
   // Deleted message — render a minimal tombstone
   if (is_deleted) {
     return (
       <div
         ref={bubbleRef}
+        data-message-id={_id}
         className={clsx(
           "flex my-1.5 items-end gap-2.5",
           isMyMessage ? "flex-row-reverse" : "flex-row"
@@ -247,6 +274,7 @@ const ChatBubbleInner = ({
   return (
     <div
       ref={bubbleRef}
+      data-message-id={_id}
       className={clsx(
         "flex my-1.5 items-end gap-1.5 group",
         isMyMessage ? "flex-row-reverse" : "flex-row"
@@ -276,7 +304,9 @@ const ChatBubbleInner = ({
           "rounded-2xl border",
           isMyMessage
             ? "bg-[#1c2033] text-white rounded-br-lg border-white/6"
-            : "bg-[#161b27] text-white/90 rounded-bl-lg border-white/4"
+            : "bg-[#161b27] text-white/90 rounded-bl-lg border-white/4",
+          isActiveMatch && "ring-2 ring-yellow-400/70",
+          isMatch && !isActiveMatch && "ring-1 ring-yellow-400/30"
         )}
       >
         {/* Reply block */}
@@ -397,7 +427,7 @@ const ChatBubbleInner = ({
               </p>
             )}
             <p className="wrap-break-word whitespace-pre-wrap leading-relaxed">
-              {content}
+              <HighlightText text={content} query={searchQuery} />
               <span
                 className="inline-block select-none pointer-events-none"
                 style={{
