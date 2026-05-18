@@ -13,13 +13,17 @@ import { Chat } from "@/types/chat.types";
 
 const PdfPreview = dynamic(() => import("./PdfPreview"));
 
-interface ChatBubbleProps {
+interface ChatBubbleInnerProps {
   message: Message;
   userId: string;
   isGroup?: boolean;
   totalMembers: number;
   handleMessageSeen: (message_id: string) => void;
 }
+
+type ChatBubbleProps =
+  | (ChatBubbleInnerProps & { isTyping?: false })
+  | { isTyping: true; isGroup?: boolean; senderName?: string; senderAvatarUrl?: string };
 
 const formatFileSize = (bytes: number) => {
   const kb = bytes / 1024;
@@ -74,13 +78,13 @@ const ReplyBlock = ({
   );
 };
 
-const ChatBubble = ({
+const ChatBubbleInner = ({
   userId,
   isGroup,
   message,
   totalMembers,
   handleMessageSeen,
-}: ChatBubbleProps) => {
+}: ChatBubbleInnerProps) => {
   const {
     _id,
     sender,
@@ -453,6 +457,57 @@ const ChatBubble = ({
       )}
     </div>
   );
+};
+
+const TypingBubble = ({
+  isGroup,
+  senderName,
+  senderAvatarUrl,
+}: {
+  isGroup?: boolean;
+  senderName?: string;
+  senderAvatarUrl?: string;
+}) => (
+  <div className="flex my-1.5 items-end gap-1.5">
+    {isGroup && (
+      <div className="shrink-0 w-8 h-8 rounded-full overflow-hidden bg-[#1e2230] flex items-center justify-center">
+        {senderAvatarUrl ? (
+          <Image
+            src={senderAvatarUrl}
+            width={32}
+            height={32}
+            className="rounded-full object-cover"
+            alt={senderName ?? ""}
+          />
+        ) : (
+          <User className="w-4 h-4 text-white/40" />
+        )}
+      </div>
+    )}
+    <div className="relative max-w-[320px] text-sm overflow-hidden rounded-2xl border bg-[#161b27] text-white/90 rounded-bl-lg border-white/4 px-3.5 py-2.5">
+      {isGroup && senderName && (
+        <p className="text-[11px] font-medium text-slate-400 mb-1 tracking-wide">{senderName}</p>
+      )}
+      <div className="flex items-center gap-1 py-0.5">
+        <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce [animation-delay:-0.3s]" />
+        <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce [animation-delay:-0.15s]" />
+        <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" />
+      </div>
+    </div>
+  </div>
+);
+
+const ChatBubble = (props: ChatBubbleProps) => {
+  if (props.isTyping) {
+    return (
+      <TypingBubble
+        isGroup={props.isGroup}
+        senderName={props.senderName}
+        senderAvatarUrl={props.senderAvatarUrl}
+      />
+    );
+  }
+  return <ChatBubbleInner {...props} />;
 };
 
 export default ChatBubble;

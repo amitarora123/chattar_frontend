@@ -7,10 +7,7 @@ import { useTypingStore } from "@/lib/store/typingStore";
 import { socket } from "@/lib/socket/socketClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { MessageSeen } from "@/types/message.types";
-import Image from "next/image";
-import TypingIndicator from "./TypingIndicator";
 import { useAuth } from "@/lib/providers/AuthProvider";
-import { User } from "lucide-react";
 import MessageSkeleton from "../skelton/MessageSkelton";
 import { Chat } from "@/types/chat.types";
 
@@ -113,6 +110,10 @@ const MessageContainer = () => {
 
     scrollToBottom();
   }, [messages.length, data?.pages.length]);
+
+  useEffect(() => {
+    if (typingUsers.length > 0) scrollToBottom();
+  }, [typingUsers.length]);
 
   // Load older messages when the top sentinel becomes visible
   useEffect(() => {
@@ -240,35 +241,16 @@ const MessageContainer = () => {
         );
       })}
 
-      {typingUsers.map((userId) => {
-        const participant = selectedChat?.participants?.find((p) => p.user._id === userId);
-
+      {typingUsers.map((typingUserId) => {
+        const participant = selectedChat?.participants?.find((p) => p.user._id === typingUserId);
         return (
-          <div key={userId} className="flex items-center">
-            <div className="flex items-start gap-2">
-              {selectedChat?.is_group && (
-                <div className="rounded-full">
-                  {participant?.user.avatar_url ? (
-                    <Image
-                      src={participant.user.avatar_url}
-                      width={30}
-                      height={30}
-                      className="rounded-full"
-                      alt={participant.user.username}
-                    />
-                  ) : (
-                    <User />
-                  )}
-                </div>
-              )}
-              <div className="text-white bg-neutral-800 rounded-lg px-3 py-2">
-                {participant && (
-                  <p className="text-xs text-slate-400">{`~ ${participant.user.username}`}</p>
-                )}
-                <TypingIndicator />
-              </div>
-            </div>
-          </div>
+          <ChatBubble
+            key={typingUserId}
+            isTyping
+            isGroup={!!selectedChat?.is_group}
+            senderName={participant?.user.username}
+            senderAvatarUrl={participant?.user.avatar_url ?? undefined}
+          />
         );
       })}
       <div ref={messagesEndRef} className="w-full h-1" />
