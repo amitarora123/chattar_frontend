@@ -189,7 +189,7 @@ const ChatList = () => {
     };
   }, []);
 
-  const filteredChats =
+  const tabFilteredChats =
     activeTabs === "All"
       ? chats
       : chats?.filter((c) =>
@@ -198,6 +198,18 @@ const ChatList = () => {
               !c.last_message?.seen?.some((s) => s.user_id === user?._id)
             : false
         );
+
+  const filteredChats = search.trim()
+    ? tabFilteredChats?.filter((c) => {
+        const q = search.trim().toLowerCase();
+        if (c.is_group) {
+          return c.groupMetaData?.name.toLowerCase().includes(q);
+        } else {
+          const otherParticipant = c.participants.find((p) => p.user._id !== user?._id);
+          return otherParticipant?.user.username.toLowerCase().includes(q);
+        }
+      })
+    : tabFilteredChats;
   return (
     <>
       <div className="p-3 flex flex-col flex-1 min-h-0">
@@ -242,6 +254,8 @@ const ChatList = () => {
             type="text"
             className="rounded-full pl-10 focus-visible:ring-0 py-5"
             placeholder="Search or start a new chat"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
           <div className="absolute left-3 h-full flex items-center top-0">
             <Search className="size-4 text-muted-foreground" />
