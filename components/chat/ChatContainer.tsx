@@ -17,7 +17,7 @@ const ChatContainer = ({ className }: ChatContainerProps) => {
     <section className={clsx(className, "w-full h-full flex overflow-hidden flex-col  relative")}>
       <ChatHeader />
       <MessageContainer />
-      {selectedChat && <ChatInput chatId={selectedChat._id} />}
+      {selectedChat && <ChatInput key={selectedChat._id} chatId={selectedChat._id} />}
     </section>
   );
 };

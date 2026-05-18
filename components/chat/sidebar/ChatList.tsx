@@ -2,16 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import { Search, User, Users, UsersRound } from "lucide-react";
 import { useSidebarStore } from "@/lib/store/sidebarStore";
-import clsx from "clsx";
 import { useChatStore } from "@/lib/store/chatStore";
 import { useTypingStore } from "@/lib/store/typingStore";
 import { useEffect, useState } from "react";
 
-import { Button } from "../../ui/button";
 import { Input } from "../../ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
 import { getMyChats } from "@/lib/api/chat.api";
-import { getMessageDateTimeStamp } from "@/lib/utils";
+import { cn, getMessageDateTimeStamp } from "@/lib/utils";
 import MobileBottomNav from "@/components/ui/mobile-bottom-navbar";
 import { socket } from "@/lib/socket/socketClient";
 import { useAuth } from "@/lib/providers/AuthProvider";
@@ -31,7 +29,7 @@ const ChatListItem = ({
   onlineUserIds: string[];
   authUser: AuthUser;
 }) => {
-  const { selectChat } = useChatStore();
+  const { selectChat, selectedChat } = useChatStore();
   const typingUserIds = useTypingStore((s) => s.typingByChatId[chat._id] ?? EMPTY_TYPING);
 
   let displayName = "";
@@ -77,7 +75,10 @@ const ChatListItem = ({
     <li
       key={chat._id}
       onClick={() => selectChat(chat)}
-      className="p-3 hover:bg-slate-900/80 cursor-pointer rounded-lg mt-2 flex gap-4 transition-colors"
+      className={cn(
+        "p-3 hover:bg-slate-900/80 cursor-pointer rounded-lg mt-2 flex gap-4 transition-colors",
+        selectedChat?._id === chat._id ? "bg-slate-900/80" : ""
+      )}
     >
       {/* Avatar */}
       <div className="relative w-10 h-10 shrink-0 flex items-center justify-center">
@@ -117,7 +118,7 @@ const ChatListItem = ({
             )}
             {chat.last_message?.createdAt && (
               <span className="text-xs whitespace-nowrap ml-2 text-neutral-400">
-                {getMessageDateTimeStamp(chat.last_message.createdAt)}
+                {getMessageDateTimeStamp(chat.last_message.updatedAt)}
               </span>
             )}
           </div>
@@ -127,21 +128,25 @@ const ChatListItem = ({
         {typingLabel ? (
           <p className="truncate text-sm text-green-400 mt-1 animate-pulse">{typingLabel}</p>
         ) : chat.last_message ? (
-          <div className="flex items-center gap-1">
-            {isMyMessage && (
-              <Ticks
-                isPending={!!chat.last_message.isPending}
-                isMessageSeen={isMyMessageSeen}
-                isMyMessage={isMyMessage}
-              />
-            )}
-            <p
-              className={`truncate text-sm mt-1 ${!isMyMessage && !isMessageSeen ? "font-semibold text-white" : "text-neutral-400"}`}
-            >
-              {chat.is_group && (isMyMessage ? "me: " : chat.last_message.sender.username) + ": "}
-              {chat.last_message.content || chat.last_message.attachment?.file_name}
-            </p>
-          </div>
+          chat.last_message.is_deleted ? (
+            <span className="text-sm italic text-neutral-400">This message was deleted</span>
+          ) : (
+            <div className="flex items-center gap-1">
+              {isMyMessage && (
+                <Ticks
+                  isPending={!!chat.last_message.isPending}
+                  isMessageSeen={isMyMessageSeen}
+                  isMyMessage={isMyMessage}
+                />
+              )}
+              <p
+                className={`truncate text-sm mt-1 ${!isMyMessage && !isMessageSeen ? "font-semibold text-white" : "text-neutral-400"}`}
+              >
+                {chat.is_group && (isMyMessage ? "me: " : chat.last_message.sender.username) + ": "}
+                {chat.last_message.content || chat.last_message.attachment?.file_name}
+              </p>
+            </div>
+          )
         ) : null}
       </div>
     </li>
@@ -152,6 +157,7 @@ const ChatList = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { changeSidebar } = useSidebarStore();
   const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
 
   const { data: chats, isLoading: chatsLoading } = useQuery({
     queryKey: ["chats"],
@@ -183,6 +189,15 @@ const ChatList = () => {
     };
   }, []);
 
+  const filteredChats =
+    activeTabs === "All"
+      ? chats
+      : chats?.filter((c) =>
+          !!c.last_message
+            ? c.last_message?.sender._id !== user?._id &&
+              !c.last_message?.seen?.some((s) => s.user_id === user?._id)
+            : false
+        );
   return (
     <>
       <div className="p-3 flex flex-col flex-1 min-h-0">
@@ -235,21 +250,25 @@ const ChatList = () => {
 
         {/* Tabs */}
         <div className="flex gap-3 items-center mb-2">
-          <Button
-            variant="outline"
-            className={clsx("rounded-full", activeTabs === "All" && "bg-neutral-700")}
+          <button
+            className={cn(
+              "rounded-full px-5 py-1 hover:bg-slate-900 cursor-pointer transition-colors duration-100 ease border-border text-sm border hover:text-white",
+              activeTabs === "All" ? "bg-slate-100! hover:text-black text-black" : ""
+            )}
             onClick={() => setActiveTabs("All")}
           >
             All
-          </Button>
+          </button>
 
-          <Button
-            variant="outline"
-            className={clsx("rounded-full", activeTabs === "Unread" && "bg-neutral-700")}
+          <button
+            className={cn(
+              "rounded-full px-5 py-1 cursor-pointer hover:bg-slate-900 transition-colors duration-100 ease border-border text-sm border",
+              activeTabs === "Unread" ? "bg-slate-100! text-black" : ""
+            )}
             onClick={() => setActiveTabs("Unread")}
           >
             Unread
-          </Button>
+          </button>
         </div>
 
         {/* Chat List */}
@@ -264,7 +283,7 @@ const ChatList = () => {
             </div>
           ) : chats?.length ? (
             <ul className="overflow-y-auto hide-scrollbar h-full pb-5">
-              {chats.map((chat) => (
+              {filteredChats?.map((chat) => (
                 <ChatListItem
                   key={chat._id}
                   chat={chat}

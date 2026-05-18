@@ -126,14 +126,6 @@ const ChatInput = ({ chatId }: ChatInputProps) => {
     setValue(editingMessage ? editingMessage.content : "");
   }
 
-  // Reset state when switching chats
-  const [prevChatId, setPrevChatId] = useState(chatId);
-  if (prevChatId !== chatId) {
-    setPrevChatId(chatId);
-    clear();
-    setValue("");
-  }
-
   const stopTyping = () => {
     if (!userId || !isTyping) return;
     clearTimeout(typingTimeout.current ?? undefined);

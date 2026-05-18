@@ -9,6 +9,7 @@ import { useEffect, useRef } from "react";
 import { socket } from "@/lib/socket/socketClient";
 import { useQueryClient, InfiniteData } from "@tanstack/react-query";
 import { useChatStore } from "@/lib/store/chatStore";
+import { Chat } from "@/types/chat.types";
 
 const PdfPreview = dynamic(() => import("./PdfPreview"));
 
@@ -147,6 +148,18 @@ const ChatBubble = ({
         };
       }
     );
+
+    queryClient.setQueryData(["chats"], (old: Chat[] | undefined) => {
+      if (!old) return old;
+
+      return old.map((o) =>
+        o._id !== selectedChat._id
+          ? o
+          : o.last_message?._id === _id
+            ? { ...o, last_message: { ...o.last_message, is_deleted: true, content: "" } }
+            : o.last_message
+      );
+    });
 
     socket.emit("message:delete", { room, message_id: _id }, ({ error }: { error?: string }) => {
       if (error) {
@@ -383,12 +396,20 @@ const ChatBubble = ({
               {content}
               <span
                 className="inline-block select-none pointer-events-none"
-                style={{ width: isMyMessage ? "70px" : "50px" }}
+                style={{
+                  width: is_edited
+                    ? isMyMessage
+                      ? "105px"
+                      : "88px"
+                    : isMyMessage
+                      ? "70px"
+                      : "50px",
+                }}
                 aria-hidden
               />
             </p>
             <div className="absolute bottom-2.5 right-3.5 flex items-center gap-1">
-              {is_edited && <span className="text-[9px] text-white/25 select-none">edited</span>}
+              {is_edited && <span className="text-[10px] text-white/50 select-none">edited</span>}
               <span className="text-[10px] text-white/30 select-none">{timestamp}</span>
               <Ticks
                 isMyMessage={isMyMessage}
