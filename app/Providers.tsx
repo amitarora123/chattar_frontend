@@ -22,7 +22,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
         <GoogleOAuthProvider clientId={googleClientId}>
           {children}
           {process.env.NODE_ENV === "development" && (
-            <ReactQueryDevtools position="top" buttonPosition="top-right" initialIsOpen={false} />
+            <ReactQueryDevtools position="top" buttonPosition="top-left" initialIsOpen={false} />
           )}
         </GoogleOAuthProvider>
       </TooltipProvider>
