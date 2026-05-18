@@ -95,10 +95,11 @@ const GroupChat = () => {
 
     // Always include current user's id as admin, merged with user-selected admins
     const finalAdminIds = Array.from(new Set([...(user?._id ? [user._id] : []), ...adminIds]));
+    const finalMemberIds = selectedIds.filter((id) => !finalAdminIds.includes(id));
 
     mutate({
       adminIds: finalAdminIds,
-      memberIds: selectedIds,
+      memberIds: finalMemberIds,
       name,
       avatar_url,
       description,
