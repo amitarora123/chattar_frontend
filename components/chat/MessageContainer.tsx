@@ -8,8 +8,9 @@ import {
   useState,
 } from "react";
 import ChatBubble from "./ChatBubble";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { getChatMessages } from "@/lib/api/message.api";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { getChatMessages, searchMessages } from "@/lib/api/message.api";
+import useDebounce from "@/lib/hooks/useDebounce";
 import { useChatStore } from "@/lib/store/chatStore";
 import { useTypingStore } from "@/lib/store/typingStore";
 import { socket } from "@/lib/socket/socketClient";
@@ -18,6 +19,7 @@ import { MessageSeen } from "@/types/message.types";
 import { useAuth } from "@/lib/providers/AuthProvider";
 import MessageSkeleton from "../skelton/MessageSkelton";
 import { Chat } from "@/types/chat.types";
+import { toast } from "sonner";
 
 const LIMIT = 30;
 
@@ -61,6 +63,7 @@ const MessageContainer = ({
   const hasScrolledInitialRef = useRef(false);
   const prevScrollHeightRef = useRef(0);
   const prevPagesLengthRef = useRef(0);
+  const pendingScrollToId = useRef<string | null>(null);
 
   const [prevChatId, setPrevChatId] = useState<string | undefined>(undefined);
   const [initialUnreadCount, setInitialUnreadCount] = useState(0);
@@ -74,6 +77,8 @@ const MessageContainer = ({
   useEffect(() => {
     hasScrolledInitialRef.current = false;
     prevPagesLengthRef.current = 0;
+    pendingScrollToId.current = null;
+    toast.dismiss("search-nav-load");
   }, [selectedChatId]);
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
@@ -96,13 +101,27 @@ const MessageContainer = ({
   // Reverse page order so oldest messages appear at top
   const messages = useMemo(() => data?.pages.slice().reverse().flat() ?? [], [data?.pages]);
 
+  const debouncedQuery = useDebounce(searchQuery, 300);
+
+  const { data: searchResults } = useQuery({
+    queryKey: ["message-search", selectedChatId, debouncedQuery],
+    queryFn: () => searchMessages({ chat_id: selectedChatId!, q: debouncedQuery }),
+    enabled: !!selectedChatId && debouncedQuery.trim().length >= 2,
+    staleTime: 30_000,
+  });
+
   const matchIds = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
+    // Use backend results once the debounced query has settled and results arrived
+    if (searchResults !== undefined && debouncedQuery.trim().toLowerCase() === q) {
+      return searchResults.map((m) => m._id);
+    }
+    // Fallback to local filter while the backend request is in-flight
     return messages
       .filter((m) => !m.is_deleted && m.content.toLowerCase().includes(q))
       .map((m) => m._id);
-  }, [messages, searchQuery]);
+  }, [messages, searchQuery, searchResults, debouncedQuery]);
 
   const activeMatchId = matchIds[activeMatchIdx] ?? null;
 
@@ -110,11 +129,40 @@ const MessageContainer = ({
     onMatchCountChange?.(matchIds.length);
   }, [matchIds.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const SEARCH_TOAST_ID = "search-nav-load";
+
   useEffect(() => {
     if (!activeMatchId || !scrollContainerRef.current) return;
+    toast.dismiss(SEARCH_TOAST_ID);
     const el = scrollContainerRef.current.querySelector(`[data-message-id="${activeMatchId}"]`);
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [activeMatchId]);
+    if (el) {
+      pendingScrollToId.current = null;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else if (hasNextPage && !isFetchingNextPage) {
+      pendingScrollToId.current = activeMatchId;
+      toast.loading("Loading message…", { id: SEARCH_TOAST_ID });
+      prevScrollHeightRef.current = scrollContainerRef.current.scrollHeight;
+      fetchNextPage();
+    }
+  }, [activeMatchId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // After each page loads, check if the pending scroll target is now in the DOM
+  useEffect(() => {
+    const id = pendingScrollToId.current;
+    if (!id || isFetchingNextPage || !scrollContainerRef.current) return;
+    const el = scrollContainerRef.current.querySelector(`[data-message-id="${id}"]`);
+    if (el) {
+      pendingScrollToId.current = null;
+      toast.dismiss(SEARCH_TOAST_ID);
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else if (hasNextPage) {
+      prevScrollHeightRef.current = scrollContainerRef.current.scrollHeight;
+      fetchNextPage();
+    } else {
+      pendingScrollToId.current = null;
+      toast.dismiss(SEARCH_TOAST_ID);
+    }
+  }, [messages.length, isFetchingNextPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView();

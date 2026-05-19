@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ChatInput from "./ChatInput";
 import ChatHeader from "./ChatHeader";
 import ChatSearchBar from "./ChatSearchBar";
@@ -30,6 +30,17 @@ const ChatContainer = ({ className }: ChatContainerProps) => {
     setActiveMatchIdx(0);
     setMatchCount(0);
   }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "f") {
+        e.preventDefault();
+        setShowSearch(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleSearchChange = (q: string) => {
     setSearchQuery(q);

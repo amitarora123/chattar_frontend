@@ -19,6 +19,14 @@ export const getChatMessages = async (data: {
   return res.data.data;
 };
 
+export const searchMessages = async (data: { chat_id: string; q: string }): Promise<Message[]> => {
+  const { chat_id, q } = data;
+  const res = await apiClient.get(`/messages/chat/${chat_id}/search`, {
+    params: { q },
+  });
+  return res.data.data;
+};
+
 export const getChatAttachments = async (chat_id: string): Promise<Message[]> => {
   const res = await apiClient.get(`/messages/chat/${chat_id}/attachments`);
   return res.data.data;
