@@ -1,14 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,7 +13,6 @@ import GoogleLoginButton from "./GoogleLogin";
 import { useMutation } from "@tanstack/react-query";
 import { signIn } from "@/lib/api/auth.api";
 import { showErrorMessage, showSuccessMessage } from "@/lib/utils";
-import { setRefreshToken } from "@/lib/auth/session";
 
 const signInSchema = z.object({
   email: z.email(),
@@ -43,8 +35,7 @@ const SignInForm = () => {
   const signInMutation = useMutation({
     mutationKey: ["sign-in"],
     mutationFn: signIn,
-    onSuccess: (data) => {
-      setRefreshToken(data.refreshToken);
+    onSuccess: () => {
       router.replace("/chats");
     },
     onError: (error) => {
@@ -97,18 +88,12 @@ const SignInForm = () => {
           <GoogleLoginButton />
           <p className="font-bold text-sm">
             Don&apos;t have an account?{" "}
-            <Link
-              href="/auth/sign-up"
-              className="text-blue-400 hover:underline"
-            >
+            <Link href="/auth/sign-up" className="text-blue-400 hover:underline">
               Sign Up
             </Link>
           </p>
           <p className="font-bold text-sm">
-            <Link
-              href="/auth/forgot-password"
-              className="text-blue-400 hover:underline"
-            >
+            <Link href="/auth/forgot-password" className="text-blue-400 hover:underline">
               Forgot Password
             </Link>
           </p>

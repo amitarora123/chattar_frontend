@@ -12,13 +12,12 @@ import React, {
 import { logout, refreshAccessToken } from "../api/auth.api";
 import { useRouter } from "next/navigation";
 import { apiClient } from "../apiClient/apiClient";
-import { clearRefreshToken, getRefreshToken, setRefreshToken } from "../auth/session";
 import { User } from "@/types/user.types";
 
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
-  setTokens: (accessToken: string, refreshToken: string) => void;
+  setAccessToken: (accessToken: string) => void;
   clearTokens: () => void;
 }
 
@@ -57,18 +56,17 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const refreshAccessTokenMutation = useMutation({
     mutationKey: ["refresh-access-token"],
-    mutationFn: (token: string) => refreshAccessToken(token),
+    mutationFn: () => refreshAccessToken(),
     onSuccess: (data) => {
-      const { accessToken, refreshToken, ...userData } = data;
-
+      const { accessToken, ...userData } = data;
       tokenRef.current = accessToken;
-      if (data.refreshToken) setRefreshToken(refreshToken);
       setUser(userData);
       setIsLoading(false);
       resolveInitRef.current?.();
     },
-    onError: async () => {
+    onError: async (error) => {
       setIsLoading(false);
+      console.log("error in refreshing the token: ", error);
       resolveInitRef.current?.();
       clearTokens();
       await logoutMutation.mutateAsync();
@@ -78,14 +76,12 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const { mutate: triggerRefresh } = refreshAccessTokenMutation;
 
-  const setTokens = useCallback((accessToken: string, refreshToken: string): void => {
+  const setAccessToken = useCallback((accessToken: string): void => {
     tokenRef.current = accessToken;
-    setRefreshToken(refreshToken);
   }, []);
 
   const clearTokens = useCallback((): void => {
     tokenRef.current = null;
-    clearRefreshToken();
   }, []);
 
   const processQueue = (error: unknown, newToken: string | null) => {
@@ -147,20 +143,10 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isRefreshing.current = true;
 
         try {
-          const storedToken = getRefreshToken();
-          if (!storedToken) {
-            processQueue(new Error("No refresh token"), null);
-            clearTokens();
-            router.replace("/auth/sign-in");
-            return Promise.reject(new Error("No refresh token"));
-          }
-
-          const data = await refreshAccessTokenMutation.mutateAsync(storedToken);
+          const data = await refreshAccessTokenMutation.mutateAsync();
           const newToken = data.accessToken;
 
           tokenRef.current = newToken;
-          if (data.refreshToken) setRefreshToken(data.refreshToken);
-
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
           processQueue(null, newToken);
 
@@ -179,19 +165,13 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, [refreshAccessTokenMutation, clearTokens, router]);
 
-  // Initial token load on mount
+  // Initial token load on mount — always attempt refresh; cookie is sent automatically
   useEffect(() => {
-    const token = getRefreshToken();
-    if (!token) {
-      setIsLoading(false);
-      router.replace("/auth/sign-in");
-      return;
-    }
-    triggerRefresh(token);
-  }, [triggerRefresh, router]);
+    triggerRefresh();
+  }, [triggerRefresh]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, setTokens, clearTokens }}>
+    <AuthContext.Provider value={{ user, isLoading, setAccessToken, clearTokens }}>
       {children}
     </AuthContext.Provider>
   );

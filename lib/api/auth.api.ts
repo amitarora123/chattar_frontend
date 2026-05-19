@@ -21,9 +21,7 @@ export const signIn = async (data: SignInProps): Promise<AuthResponse> => {
   return res.data;
 };
 
-export const googleLogin = async (
-  data: GoogleLoginProps,
-): Promise<AuthResponse> => {
+export const googleLogin = async (data: GoogleLoginProps): Promise<AuthResponse> => {
   const res = await apiClient.post("/auth/google-login", data);
   return res.data;
 };
@@ -48,14 +46,8 @@ export const resendOtp = async (email: string): Promise<ResendOtpResponse> => {
   return res.data;
 };
 
-export const refreshAccessToken = async (
-  refreshToken: string,
-): Promise<RefreshAccessToken> => {
-  const res = await apiClient.post(
-    "/auth/refresh",
-    { refreshToken },
-    { withCredentials: true },
-  );
+export const refreshAccessToken = async (): Promise<RefreshAccessToken> => {
+  const res = await apiClient.post("/auth/refresh");
   return res.data;
 };
 

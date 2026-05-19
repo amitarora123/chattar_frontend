@@ -22,12 +22,11 @@ export interface AuthResponse {
   username: string;
   email: string;
   accessToken: string;
-  refreshToken: string;
   avatar_url: string;
 }
 
 export interface GoogleLoginProps {
-  id_token: string;
+  code: string;
 }
 
 export interface ResetPasswordProps {
@@ -47,7 +46,6 @@ export interface ResendOtpResponse {
 
 export interface RefreshAccessToken {
   accessToken: string;
-  refreshToken: string;
   _id: string;
   username: string;
   email: string;
