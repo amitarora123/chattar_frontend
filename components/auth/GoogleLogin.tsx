@@ -1,51 +1,31 @@
 "use client";
 
-import { CredentialResponse, GoogleLogin } from "@react-oauth/google";
-import { useMutation } from "@tanstack/react-query";
-import { googleLogin } from "@/lib/api/auth.api";
-import { showErrorMessage } from "@/lib/utils";
-import { useRouter } from "next/navigation";
-import { setRefreshToken } from "@/lib/auth/session";
+import { Button } from "../ui/button";
+import { FcGoogle } from "react-icons/fc";
+
+const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+
 const GoogleLoginButton = () => {
-  const router = useRouter();
-
-  const googleLoginMutation = useMutation({
-    mutationKey: ["google-login"],
-    mutationFn: googleLogin,
-    onError: (error) => {
-      showErrorMessage(error);
-    },
-    onSuccess: (data) => {
-      setRefreshToken(data.refreshToken);
-      router.replace("/chats");
-    },
-  });
-
-  const handleGoogleLogin = (credentialResponse: CredentialResponse) => {
-    const idToken = credentialResponse.credential;
-    if (!idToken) {
-      showErrorMessage("Invalid idToken");
-      return;
-    }
-    googleLoginMutation.mutate({
-      id_token: idToken,
+  const handleGoogleLogin = () => {
+    const params = new URLSearchParams({
+      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+      redirect_uri: `${process.env.NEXT_PUBLIC_BASEURI}/auth/google/callback`,
+      response_type: "code",
+      scope: "email profile",
+      prompt: "select_account",
     });
+    window.location.href = `${GOOGLE_AUTH_URL}?${params.toString()}`;
   };
 
   return (
-    <GoogleLogin onSuccess={handleGoogleLogin} />
-    // <Button
-    //   variant="outline"
-    //   onClick={() =>
-    //     signIn("google", {
-    //       redirect: true,
-    //       redirectTo: "/chats",
-    //     })
-    //   }
-    //   className="w-full hover:opacity-80 hover:text-white cursor-pointer"
-    // >
-    //   Login With Google <FcGoogle />
-    // </Button>
+    <Button
+      type="button"
+      variant="outline"
+      onClick={handleGoogleLogin}
+      className="w-full cursor-pointer"
+    >
+      <FcGoogle className="mr-2" /> Login with Google
+    </Button>
   );
 };
 
