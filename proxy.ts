@@ -17,11 +17,7 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(new URL("/chats", req.url));
     }
   } else {
-    const isProtectedRoute = protectedRoutes.some((route) => {
-      if (pathname.startsWith(route)) {
-        return true;
-      }
-    });
+    const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
 
     if (isProtectedRoute) {
       return NextResponse.redirect(new URL("/auth/sign-in", req.url));
