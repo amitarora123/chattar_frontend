@@ -8,14 +8,14 @@ import {
   useState,
 } from "react";
 import ChatBubble from "./ChatBubble";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, InfiniteData } from "@tanstack/react-query";
 import { getChatMessages, searchMessages } from "@/lib/api/message.api";
 import useDebounce from "@/lib/hooks/useDebounce";
 import { useChatStore } from "@/lib/store/chatStore";
 import { useTypingStore } from "@/lib/store/typingStore";
 import { socket } from "@/lib/socket/socketClient";
 import { useQueryClient } from "@tanstack/react-query";
-import { MessageSeen } from "@/types/message.types";
+import { Message, MessageReaction, MessageSeen } from "@/types/message.types";
 import { useAuth } from "@/lib/providers/AuthProvider";
 import MessageSkeleton from "../skelton/MessageSkelton";
 import { Chat } from "@/types/chat.types";
@@ -225,6 +225,33 @@ const MessageContainer = ({
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  useEffect(() => {
+    const handler = ({
+      message_id,
+      reactions,
+    }: {
+      message_id: string;
+      reactions: MessageReaction[];
+    }) => {
+      queryClient.setQueryData(
+        ["chat-messages", selectedChatId],
+        (old: InfiniteData<Message[]> | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) =>
+              page.map((m) => (m._id === message_id ? { ...m, reactions } : m))
+            ),
+          };
+        }
+      );
+    };
+    socket.on("message:reaction", handler);
+    return () => {
+      socket.off("message:reaction", handler);
+    };
+  }, [selectedChatId, queryClient]);
 
   const decreaseUnreadCount = useCallback(
     (message_id: string, data: MessageSeen) => {

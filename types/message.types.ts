@@ -2,6 +2,12 @@ import { User } from "./user.types";
 
 export type Sender = Pick<User, "_id" | "avatar_url" | "username">;
 
+export interface MessageReaction {
+  emoji: string;
+  count: number;
+  userIds: string[];
+}
+
 export interface Message {
   _id: string;
   chat_id: string;
@@ -14,6 +20,7 @@ export interface Message {
   is_deleted: boolean;
   seen: MessageSeen[];
   reply_to?: ReplyMessage | null;
+  reactions?: MessageReaction[];
   isPending?: boolean;
 }
 

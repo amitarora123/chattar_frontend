@@ -1,15 +1,17 @@
 import { getMessageDateTimeStamp } from "@/lib/utils";
-import { Message, ReplyMessage } from "@/types/message.types";
+import { Message, MessageReaction, ReplyMessage } from "@/types/message.types";
 import { useChatInputStore } from "@/lib/store/chatInputStore";
 import clsx from "clsx";
-import { User, Clock, CheckCheck, CornerUpLeft, Pencil, Trash2 } from "lucide-react";
+import { User, Clock, CheckCheck, CornerUpLeft, Pencil, Trash2, Smile } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { socket } from "@/lib/socket/socketClient";
 import { useQueryClient, InfiniteData } from "@tanstack/react-query";
 import { useChatStore } from "@/lib/store/chatStore";
 import { Chat } from "@/types/chat.types";
+
+const EMOJI_SET = ["👍", "❤️", "😂", "😮", "😢", "😡"];
 
 const PdfPreview = dynamic(() => import("./PdfPreview"));
 
@@ -121,14 +123,98 @@ const ChatBubbleInner = ({
     is_edited,
     is_deleted,
     reply_to,
+    reactions,
   } = message;
   const isMyMessage = sender._id === userId;
   const bubbleRef = useRef<HTMLDivElement>(null);
   const hasFiredRef = useRef(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const { setReplyingTo, setEditingMessage } = useChatInputStore();
   const queryClient = useQueryClient();
   const selectedChat = useChatStore((s) => s.selectedChat);
+
+  const handleReact = (emoji: string) => {
+    if (!selectedChat) return;
+    const room = `chat:${selectedChat._id}`;
+
+    queryClient.setQueryData(
+      ["chat-messages", selectedChat._id],
+      (old: InfiniteData<Message[]> | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) =>
+            page.map((m) => {
+              if (m._id !== _id) return m;
+              const cur = m.reactions ?? [];
+              const alreadyReacted = cur.find((r) => r.userIds.includes(userId));
+              let next: MessageReaction[];
+              if (alreadyReacted?.emoji === emoji) {
+                next = cur
+                  .map((r) =>
+                    r.emoji === emoji
+                      ? {
+                          ...r,
+                          count: r.count - 1,
+                          userIds: r.userIds.filter((id) => id !== userId),
+                        }
+                      : r
+                  )
+                  .filter((r) => r.count > 0);
+              } else {
+                next = cur
+                  .map((r) =>
+                    r.userIds.includes(userId)
+                      ? {
+                          ...r,
+                          count: r.count - 1,
+                          userIds: r.userIds.filter((id) => id !== userId),
+                        }
+                      : r
+                  )
+                  .filter((r) => r.count > 0);
+                const existing = next.find((r) => r.emoji === emoji);
+                if (existing) {
+                  next = next.map((r) =>
+                    r.emoji === emoji
+                      ? { ...r, count: r.count + 1, userIds: [...r.userIds, userId] }
+                      : r
+                  );
+                } else {
+                  next = [...next, { emoji, count: 1, userIds: [userId] }];
+                }
+              }
+              return { ...m, reactions: next };
+            })
+          ),
+        };
+      }
+    );
+
+    socket.emit(
+      "message:react",
+      { room, message_id: _id, reaction: emoji },
+      ({ error, data }: { error?: string; data?: MessageReaction[] }) => {
+        if (error) {
+          queryClient.invalidateQueries({ queryKey: ["chat-messages", selectedChat._id] });
+        } else if (data) {
+          queryClient.setQueryData(
+            ["chat-messages", selectedChat._id],
+            (old: InfiniteData<Message[]> | undefined) => {
+              if (!old) return old;
+              return {
+                ...old,
+                pages: old.pages.map((page) =>
+                  page.map((m) => (m._id === _id ? { ...m, reactions: data } : m))
+                ),
+              };
+            }
+          );
+        }
+      }
+    );
+  };
 
   const isMessageSeen = seen.filter((s) => s.user_id !== userId).length === totalMembers - 1;
 
@@ -272,217 +358,282 @@ const ChatBubbleInner = ({
   const canEdit = isMyMessage && !attachment && !isPending;
 
   return (
-    <div
-      ref={bubbleRef}
-      data-message-id={_id}
-      className={clsx(
-        "flex my-1.5 items-end gap-1.5 group",
-        isMyMessage ? "flex-row-reverse" : "flex-row"
-      )}
-    >
-      {/* Avatar — group received only */}
-      {isGroup && !isMyMessage && (
-        <div className="shrink-0 w-8 h-8 rounded-full overflow-hidden bg-[#1e2230] flex items-center justify-center">
-          {sender.avatar_url ? (
-            <Image
-              src={sender.avatar_url}
-              width={32}
-              height={32}
-              className="rounded-full object-cover"
-              alt={sender.username}
-            />
-          ) : (
-            <User className="w-4 h-4 text-white/40" />
-          )}
-        </div>
-      )}
-
-      {/* Bubble */}
+    <div ref={bubbleRef} data-message-id={_id} className="flex flex-col my-1.5">
       <div
         className={clsx(
-          "relative max-w-[320px] text-sm overflow-hidden",
-          "rounded-2xl border",
-          isMyMessage
-            ? "bg-[#1c2033] text-white rounded-br-lg border-white/6"
-            : "bg-[#161b27] text-white/90 rounded-bl-lg border-white/4",
-          isActiveMatch && "ring-2 ring-yellow-400/70",
-          isMatch && !isActiveMatch && "ring-1 ring-yellow-400/30"
+          "flex items-end gap-1.5 group",
+          isMyMessage ? "flex-row-reverse" : "flex-row"
         )}
       >
-        {/* Reply block */}
-        {reply_to && <ReplyBlock reply_to={reply_to} isMyMessage={isMyMessage} />}
-
-        {/* Image attachment */}
-        {isImage && attachment && (
-          <div className="relative">
-            {attachment.file_url.startsWith("blob:") ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={attachment.file_url}
-                alt={attachment.file_name}
-                className={clsx("w-full max-w-75 object-cover block", isPending && "opacity-60")}
+        {/* Avatar — group received only */}
+        {isGroup && !isMyMessage && (
+          <div className="shrink-0 w-8 h-8 rounded-full overflow-hidden bg-[#1e2230] flex items-center justify-center">
+            {sender.avatar_url ? (
+              <Image
+                src={sender.avatar_url}
+                width={32}
+                height={32}
+                className="rounded-full object-cover"
+                alt={sender.username}
               />
             ) : (
-              <Image
-                src={attachment.file_url}
-                width={300}
-                height={220}
-                alt={attachment.file_name || attachment.file_url}
-                className="w-full max-w-75 object-cover block"
-              />
+              <User className="w-4 h-4 text-white/40" />
             )}
-            {isPending && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                <div className="relative w-11 h-11 flex items-center justify-center">
-                  <div className="absolute inset-0 rounded-full border-2 border-blue-400/20 border-t-blue-400 animate-spin" />
+          </div>
+        )}
+
+        {/* Bubble */}
+        <div
+          className={clsx(
+            "relative max-w-[320px] text-sm overflow-hidden",
+            "rounded-2xl border",
+            isMyMessage
+              ? "bg-[#1c2033] text-white rounded-br-lg border-white/6"
+              : "bg-[#161b27] text-white/90 rounded-bl-lg border-white/4",
+            isActiveMatch && "ring-2 ring-yellow-400/70",
+            isMatch && !isActiveMatch && "ring-1 ring-yellow-400/30"
+          )}
+        >
+          {/* Reply block */}
+          {reply_to && <ReplyBlock reply_to={reply_to} isMyMessage={isMyMessage} />}
+
+          {/* Image attachment */}
+          {isImage && attachment && (
+            <div className="relative">
+              {attachment.file_url.startsWith("blob:") ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={attachment.file_url}
+                  alt={attachment.file_name}
+                  className={clsx("w-full max-w-75 object-cover block", isPending && "opacity-60")}
+                />
+              ) : (
+                <Image
+                  src={attachment.file_url}
+                  width={300}
+                  height={220}
+                  alt={attachment.file_name || attachment.file_url}
+                  className="w-full max-w-75 object-cover block"
+                />
+              )}
+              {isPending && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                  <div className="relative w-11 h-11 flex items-center justify-center">
+                    <div className="absolute inset-0 rounded-full border-2 border-blue-400/20 border-t-blue-400 animate-spin" />
+                  </div>
                 </div>
+              )}
+              {!content && !isPending && (
+                <div className="absolute bottom-1.5 right-2 flex items-center gap-1 bg-black/50 rounded px-1.5 py-0.5">
+                  <span className="text-[11px] text-white/80 select-none">{timestamp}</span>
+                  <Ticks
+                    isMyMessage={isMyMessage}
+                    isPending={!!isPending}
+                    isMessageSeen={isMessageSeen}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Document attachment */}
+          {isDocument && attachment && docMeta && (
+            <>
+              {isGroup && !isMyMessage && (
+                <div className="px-3 pt-2.5 pb-0">
+                  <p className="text-[11px] font-semibold text-slate-400">{senderName}</p>
+                </div>
+              )}
+              {isPdf && (
+                <div className="overflow-hidden bg-white" style={{ height: "150px" }}>
+                  <PdfPreview url={attachment.file_url} />
+                </div>
+              )}
+              <div className="flex items-center gap-3 px-3 py-3">
+                <div
+                  className={clsx(
+                    "text-white text-[10px] font-bold px-1.5 py-1 rounded shrink-0",
+                    docMeta.badgeColor
+                  )}
+                >
+                  {docMeta.badge}
+                </div>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-sm text-white font-medium truncate max-w-45">
+                    {attachment.file_name}
+                  </span>
+                  <span className="text-xs text-white/40">
+                    {docMeta.badge} • {formatFileSize(attachment.file_size)}
+                  </span>
+                </div>
+                {!content && (
+                  <div className="shrink-0 flex items-center gap-0.5">
+                    {isPending ? (
+                      <div className="w-4 h-4 rounded-full border-2 border-blue-400/20 border-t-blue-400 animate-spin" />
+                    ) : (
+                      <>
+                        <span className="text-[11px] text-white/30 select-none">{timestamp}</span>
+                        <Ticks
+                          isMyMessage={isMyMessage}
+                          isPending={!!isPending}
+                          isMessageSeen={isMessageSeen}
+                        />
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
-            {!content && !isPending && (
-              <div className="absolute bottom-1.5 right-2 flex items-center gap-1 bg-black/50 rounded px-1.5 py-0.5">
-                <span className="text-[11px] text-white/80 select-none">{timestamp}</span>
+              {!isPending && (
+                <div className="flex border-t border-white/6">
+                  <button
+                    onClick={handleOpen}
+                    className="flex-1 py-2.5 text-[13px] font-medium text-blue-400 hover:bg-white/5 transition-colors"
+                  >
+                    Open
+                  </button>
+                  <div className="w-px my-1.5 bg-white/6" />
+                  <button
+                    onClick={handleSaveAs}
+                    className="flex-1 py-2.5 text-[13px] font-medium text-blue-400 hover:bg-white/5 transition-colors"
+                  >
+                    Save as...
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Text content */}
+          {content && (
+            <div className="relative px-3.5 py-2.5">
+              {isGroup && !isMyMessage && !isDocument && (
+                <p className="text-[11px] font-medium text-slate-400 mb-1 tracking-wide">
+                  {senderName}
+                </p>
+              )}
+              <p className="wrap-break-word whitespace-pre-wrap leading-relaxed">
+                <HighlightText text={content} query={searchQuery} />
+                <span
+                  className="inline-block select-none pointer-events-none"
+                  style={{
+                    width: is_edited
+                      ? isMyMessage
+                        ? "105px"
+                        : "88px"
+                      : isMyMessage
+                        ? "70px"
+                        : "50px",
+                  }}
+                  aria-hidden
+                />
+              </p>
+              <div className="absolute bottom-2.5 right-3.5 flex items-center gap-1">
+                {is_edited && <span className="text-[10px] text-white/50 select-none">edited</span>}
+                <span className="text-[10px] text-white/30 select-none">{timestamp}</span>
                 <Ticks
                   isMyMessage={isMyMessage}
                   isPending={!!isPending}
                   isMessageSeen={isMessageSeen}
                 />
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
-        {/* Document attachment */}
-        {isDocument && attachment && docMeta && (
-          <>
-            {isGroup && !isMyMessage && (
-              <div className="px-3 pt-2.5 pb-0">
-                <p className="text-[11px] font-semibold text-slate-400">{senderName}</p>
-              </div>
-            )}
-            {isPdf && (
-              <div className="overflow-hidden bg-white" style={{ height: "150px" }}>
-                <PdfPreview url={attachment.file_url} />
-              </div>
-            )}
-            <div className="flex items-center gap-3 px-3 py-3">
-              <div
-                className={clsx(
-                  "text-white text-[10px] font-bold px-1.5 py-1 rounded shrink-0",
-                  docMeta.badgeColor
-                )}
+        {/* Hover action buttons */}
+        {!isPending && (
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 self-end pb-1.5">
+            {/* Emoji picker */}
+            <div className="relative">
+              <button
+                onClick={() => setPickerOpen((v) => !v)}
+                title="React"
+                className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
               >
-                {docMeta.badge}
-              </div>
-              <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-sm text-white font-medium truncate max-w-45">
-                  {attachment.file_name}
-                </span>
-                <span className="text-xs text-white/40">
-                  {docMeta.badge} • {formatFileSize(attachment.file_size)}
-                </span>
-              </div>
-              {!content && (
-                <div className="shrink-0 flex items-center gap-0.5">
-                  {isPending ? (
-                    <div className="w-4 h-4 rounded-full border-2 border-blue-400/20 border-t-blue-400 animate-spin" />
-                  ) : (
-                    <>
-                      <span className="text-[11px] text-white/30 select-none">{timestamp}</span>
-                      <Ticks
-                        isMyMessage={isMyMessage}
-                        isPending={!!isPending}
-                        isMessageSeen={isMessageSeen}
-                      />
-                    </>
-                  )}
-                </div>
+                <Smile className="size-3.5" />
+              </button>
+              {pickerOpen && (
+                <>
+                  <div className="fixed inset-0 z-[9]" onClick={() => setPickerOpen(false)} />
+                  <div
+                    className={clsx(
+                      "absolute bottom-full mb-1 z-10 flex gap-1 bg-[#1a2030] border border-white/10 rounded-full px-2 py-1.5 shadow-xl",
+                      isMyMessage ? "right-0" : "left-0"
+                    )}
+                  >
+                    {EMOJI_SET.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => {
+                          handleReact(emoji);
+                          setPickerOpen(false);
+                        }}
+                        className="text-base hover:scale-125 transition-transform select-none"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
-            {!isPending && (
-              <div className="flex border-t border-white/6">
-                <button
-                  onClick={handleOpen}
-                  className="flex-1 py-2.5 text-[13px] font-medium text-blue-400 hover:bg-white/5 transition-colors"
-                >
-                  Open
-                </button>
-                <div className="w-px my-1.5 bg-white/6" />
-                <button
-                  onClick={handleSaveAs}
-                  className="flex-1 py-2.5 text-[13px] font-medium text-blue-400 hover:bg-white/5 transition-colors"
-                >
-                  Save as...
-                </button>
-              </div>
+            <button
+              onClick={() => setReplyingTo(message)}
+              title="Reply"
+              className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
+            >
+              <CornerUpLeft className="size-3.5" />
+            </button>
+            {canEdit && (
+              <button
+                onClick={() => setEditingMessage(message)}
+                title="Edit"
+                className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
+              >
+                <Pencil className="size-3.5" />
+              </button>
             )}
-          </>
-        )}
-
-        {/* Text content */}
-        {content && (
-          <div className="relative px-3.5 py-2.5">
-            {isGroup && !isMyMessage && !isDocument && (
-              <p className="text-[11px] font-medium text-slate-400 mb-1 tracking-wide">
-                {senderName}
-              </p>
+            {isMyMessage && (
+              <button
+                onClick={handleDelete}
+                title="Delete"
+                className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:red-400 transition-colors"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
             )}
-            <p className="wrap-break-word whitespace-pre-wrap leading-relaxed">
-              <HighlightText text={content} query={searchQuery} />
-              <span
-                className="inline-block select-none pointer-events-none"
-                style={{
-                  width: is_edited
-                    ? isMyMessage
-                      ? "105px"
-                      : "88px"
-                    : isMyMessage
-                      ? "70px"
-                      : "50px",
-                }}
-                aria-hidden
-              />
-            </p>
-            <div className="absolute bottom-2.5 right-3.5 flex items-center gap-1">
-              {is_edited && <span className="text-[10px] text-white/50 select-none">edited</span>}
-              <span className="text-[10px] text-white/30 select-none">{timestamp}</span>
-              <Ticks
-                isMyMessage={isMyMessage}
-                isPending={!!isPending}
-                isMessageSeen={isMessageSeen}
-              />
-            </div>
           </div>
         )}
       </div>
 
-      {/* Hover action buttons */}
-      {!isPending && (
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 self-end pb-1.5">
-          <button
-            onClick={() => setReplyingTo(message)}
-            title="Reply"
-            className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
-          >
-            <CornerUpLeft className="size-3.5" />
-          </button>
-          {canEdit && (
-            <button
-              onClick={() => setEditingMessage(message)}
-              title="Edit"
-              className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
-            >
-              <Pencil className="size-3.5" />
-            </button>
+      {/* Reaction chips */}
+      {reactions && reactions.length > 0 && (
+        <div
+          className={clsx(
+            "flex gap-1 flex-wrap mt-0.5",
+            isMyMessage ? "justify-end pr-2" : "justify-start pl-10"
           )}
-          {isMyMessage && (
-            <button
-              onClick={handleDelete}
-              title="Delete"
-              className="p-1.5 rounded-full hover:bg-white/10 text-white/40 hover:red-400 transition-colors"
-            >
-              <Trash2 className="size-3.5" />
-            </button>
-          )}
+        >
+          {reactions
+            .filter((r) => r.count > 0)
+            .map((r) => {
+              const isMine = r.userIds.includes(userId);
+              return (
+                <button
+                  key={r.emoji}
+                  onClick={() => handleReact(r.emoji)}
+                  className={clsx(
+                    "flex items-center gap-1 px-2 py-0.5 rounded-full text-sm border transition-colors",
+                    isMine
+                      ? "bg-blue-500/20 border-blue-400/40 text-white"
+                      : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
+                  )}
+                >
+                  <span>{r.emoji}</span>
+                  <span className="text-xs font-medium">{r.count}</span>
+                </button>
+              );
+            })}
         </div>
       )}
     </div>
